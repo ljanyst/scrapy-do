@@ -1,0 +1,6 @@
+docutils
+Pygments
+pytest-cov
+pytest-flake8
+pytest
+Sphinx
