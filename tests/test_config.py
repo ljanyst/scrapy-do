@@ -30,7 +30,7 @@ class ConfigTests(unittest.TestCase):
         with open(tmp[0], 'w') as f:
             f.write(CONFIG_DATA)
 
-        self.config = Config(self.config_file_name, __package__)
+        self.config = Config([self.config_file_name], __package__)
 
     #---------------------------------------------------------------------------
     def test_config(self):

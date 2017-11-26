@@ -17,18 +17,19 @@ class Config:
     """
 
     #---------------------------------------------------------------------------
-    def __init__(self, config_file, package=__package__):
+    def __init__(self, config_files=[], package=__package__):
         """
         Load the default configuration from the specified package
 
-        :param config_file: Path to the configuration file
+        :param config_file: A list of paths to configuration files
         :param package: Name of the package in which to search for a default
                         config file; the current package is assumed if `None`
         """
         self.conf = ConfigParser()
         default_config = get_data(package, 'default.conf').decode('utf-8')
         self.conf.read_string(default_config)
-        self.conf.read(config_file)
+        for config_file in config_files:
+            self.conf.read(config_file)
 
     #---------------------------------------------------------------------------
     def __get_with_type(self, getter, section, option, default):
