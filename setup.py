@@ -17,6 +17,7 @@ setup(
     package_data={
         '': ['*.conf'],
     },
+    scripts=['scrapy-do'],
     classifiers = [
         'Framework :: Scrapy',
         'Development Status :: 4 - Beta',
