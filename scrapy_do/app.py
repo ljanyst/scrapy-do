@@ -7,9 +7,11 @@
 
 import os
 
+from twisted.application.internet import TCPServer
 from twisted.application.service import MultiService, IServiceMaker
-from twisted.python import usage
+from twisted.python import log, usage
 from zope.interface import implementer
+from twisted.web import server
 
 from .config import Config
 from .webservice import WebApp
@@ -35,5 +37,17 @@ class ScrapyDoServiceMaker():
         top_service = MultiService()
         config_file = os.path.expanduser(options['config'])
         config = Config([config_file])
+
+        #-----------------------------------------------------------------------
+        # Set up the Web service
+        #-----------------------------------------------------------------------
+        interface = config.get_string('web', 'interface')
+        port = config.get_int('web', 'port')
+        webserver = TCPServer(port, server.Site(WebApp(config)),
+                              interface=interface)
+        webserver.setServiceParent(top_service)
+        log.msg(format="Scrapy-Do web interface is available at "
+                       "http://%(interface)s:%(port)s/",
+                interface=interface, port=port)
 
         return top_service
