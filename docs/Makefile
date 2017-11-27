@@ -5,7 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXAPIDOC  = sphinx-apidoc
-APIEXCLUDE    = ../setup.py ../scrapy_do/tests
+APIEXCLUDE    = ../setup.py ../tests
 APISOURCEDIR  = ..
 SPHINXPROJ    = scrapy-do
 SOURCEDIR     = .
