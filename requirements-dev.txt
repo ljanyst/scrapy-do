@@ -4,3 +4,4 @@ pytest-cov
 pytest-flake8
 pytest
 Sphinx
+twisted
