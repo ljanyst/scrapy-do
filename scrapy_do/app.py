@@ -5,16 +5,19 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import logging
 import os
 
-from twisted.application.internet import TCPServer
+from twisted.application.internet import TCPServer, SSLServer
 from twisted.application.service import MultiService, IServiceMaker
+from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.python import log, usage
 from zope.interface import implementer
 from twisted.web import server
 
-from .config import Config
 from .webservice import WebApp
+from .config import Config
+from .utils import exc_repr
 
 
 #-------------------------------------------------------------------------------
@@ -33,21 +36,60 @@ class ScrapyDoServiceMaker():
     options = ScrapyDoOptions
 
     #---------------------------------------------------------------------------
+    def _validate_web_config(self, config):
+        interface = config.get_string('web', 'interface')
+        port = config.get_int('web', 'port')
+        https = config.get_bool('web', 'https')
+        key_file = None
+        cert_file = None
+
+        if https:
+            key_file = config.get_string('web', 'key')
+            cert_file = config.get_string('web', 'cert')
+
+            for path in [key_file, cert_file]:
+                if not os.path.exists(path):
+                    raise FileNotFoundError(
+                        "No such file or directory: '{}'".format(path))
+
+        return interface, port, https, key_file, cert_file
+
+    #---------------------------------------------------------------------------
+    def _configure_web_server(self, config):
+        interface, port, https, key_file, cert_file = \
+            self._validate_web_config(config)
+
+        site = server.Site(WebApp(config))
+        if https:
+            context = DefaultOpenSSLContextFactory(key_file, cert_file)
+            web_server = SSLServer(port, site, context, interface=interface)
+            method = 'https'
+        else:
+            web_server = TCPServer(port, site, interface=interface)
+            method = 'http'
+
+        log.msg(format="Scrapy-Do web interface is available at "
+                       "%(method)s://%(interface)s:%(port)s/",
+                method=method, interface=interface, port=port)
+
+        return web_server
+
+    #---------------------------------------------------------------------------
     def makeService(self, options):
         top_service = MultiService()
         config_file = os.path.expanduser(options['config'])
         config = Config([config_file])
 
         #-----------------------------------------------------------------------
-        # Set up the Web service
+        # Set up the web server
         #-----------------------------------------------------------------------
-        interface = config.get_string('web', 'interface')
-        port = config.get_int('web', 'port')
-        webserver = TCPServer(port, server.Site(WebApp(config)),
-                              interface=interface)
-        webserver.setServiceParent(top_service)
-        log.msg(format="Scrapy-Do web interface is available at "
-                       "http://%(interface)s:%(port)s/",
-                interface=interface, port=port)
+        try:
+            web_server = self._configure_web_server(config)
+            web_server.setServiceParent(top_service)
+        except Exception as e:
+            log.msg(format="Scrapy-Do web interface could not have been "
+                           "configured: %(reason)s",
+                    reason=exc_repr(e), logLevel=logging.ERROR)
+            return top_service
 
         return top_service
