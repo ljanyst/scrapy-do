@@ -110,12 +110,14 @@ class AppTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def test_app(self):
-        def test_body(body):
-            self.failUnlessEqual(body.decode('utf-8'),
-                                 '<html>Hello, world!</html>')
+        def test_body(response):
+            resp = response[0]
+            body = response[1]
+            return self.assertEqual(body.decode('utf-8'),
+                                    '<html>Hello, world!</html>')
 
-        d = web_retrieve_async('GET', 'http://127.0.0.1:7654',
-                               body_callback=test_body)
+        d = web_retrieve_async('GET', 'http://127.0.0.1:7654')
+        d.addCallback(test_body)
         return d
 
     #---------------------------------------------------------------------------
