@@ -15,7 +15,7 @@ from twisted.python import log, usage
 from zope.interface import implementer
 from twisted.web import server
 
-from .webservice import WebApp
+from .webservice import get_web_app
 from .config import Config
 from .utils import exc_repr
 
@@ -40,8 +40,10 @@ class ScrapyDoServiceMaker():
         interface = config.get_string('web', 'interface')
         port = config.get_int('web', 'port')
         https = config.get_bool('web', 'https')
+        auth = config.get_bool('web', 'auth')
         key_file = None
         cert_file = None
+        auth_file = None
         files_to_check = []
 
         if https:
@@ -49,19 +51,23 @@ class ScrapyDoServiceMaker():
             cert_file = config.get_string('web', 'cert')
             files_to_check += [key_file, cert_file]
 
+        if auth:
+            auth_file = config.get_string('web', 'auth-db')
+            files_to_check.append(auth_file)
+
         for path in files_to_check:
             if not os.path.exists(path):
                 raise FileNotFoundError(
                     "No such file or directory: '{}'".format(path))
 
-        return interface, port, https, key_file, cert_file
+        return interface, port, https, key_file, cert_file, auth, auth_file
 
     #---------------------------------------------------------------------------
     def _configure_web_server(self, config):
-        interface, port, https, key_file, cert_file = \
+        interface, port, https, key_file, cert_file, _, _ = \
             self._validate_web_config(config)
 
-        site = server.Site(WebApp(config))
+        site = server.Site(get_web_app(config))
         if https:
             context = DefaultOpenSSLContextFactory(key_file, cert_file)
             web_server = SSLServer(port, site, context, interface=interface)
