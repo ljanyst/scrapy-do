@@ -14,9 +14,9 @@ from twisted.internet import reactor
 #-------------------------------------------------------------------------------
 class BodyCapture(Protocol):
     #---------------------------------------------------------------------------
-    def __init__(self, finished, callback):
+    def __init__(self, response, finished):
         self.body = bytes()
-        self.callback = callback
+        self.response = response
         self.finished = finished
 
     #---------------------------------------------------------------------------
@@ -25,25 +25,20 @@ class BodyCapture(Protocol):
 
     #---------------------------------------------------------------------------
     def connectionLost(self, reason):
-        self.callback(self.body)
-        self.finished.callback(None)
+        self.finished.callback((self.response, self.body))
 
 
 #-------------------------------------------------------------------------------
-def web_retrieve_async(method, uri, headers=None, producer=None,
-                       header_callback=None, body_callback=None):
+def web_retrieve_async(method, uri, headers=None, body_producer=None):
     agent = Agent(reactor)
     d = agent.request(method.encode('utf-8'), uri.encode('utf-8'),
-                      headers, producer)
+                      headers, body_producer)
 
+    finished = Deferred()
+
+    #---------------------------------------------------------------------------
     def cb_response(response):
-        finished = Deferred()
-        if header_callback is not None:
-            header_callback(response)
-
-        if body_callback is not None:
-            response.deliverBody(BodyCapture(finished, body_callback))
-        return finished
+        response.deliverBody(BodyCapture(response, finished))
 
     d.addCallback(cb_response)
-    return d
+    return finished
