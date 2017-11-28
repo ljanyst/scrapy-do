@@ -42,15 +42,17 @@ class ScrapyDoServiceMaker():
         https = config.get_bool('web', 'https')
         key_file = None
         cert_file = None
+        files_to_check = []
 
         if https:
             key_file = config.get_string('web', 'key')
             cert_file = config.get_string('web', 'cert')
+            files_to_check += [key_file, cert_file]
 
-            for path in [key_file, cert_file]:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(
-                        "No such file or directory: '{}'".format(path))
+        for path in files_to_check:
+            if not os.path.exists(path):
+                raise FileNotFoundError(
+                    "No such file or directory: '{}'".format(path))
 
         return interface, port, https, key_file, cert_file
 
