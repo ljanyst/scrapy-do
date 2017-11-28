@@ -32,7 +32,7 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         config = Config([self.config_path])
         web_config = self.service_maker._validate_web_config(config)
-        self.assertEqual(len(web_config), 5)
+        self.assertEqual(len(web_config), 7)
 
         #-----------------------------------------------------------------------
         # Correct HTTPS config
@@ -42,7 +42,7 @@ class AppConfigTests(unittest.TestCase):
         config.conf['web']['key'] = self.key_file
         config.conf['web']['cert'] = self.cert_file
         web_config = self.service_maker._validate_web_config(config)
-        self.assertEqual(len(web_config), 5)
+        self.assertEqual(len(web_config), 7)
 
         #-----------------------------------------------------------------------
         # Incorrect HTTP config
