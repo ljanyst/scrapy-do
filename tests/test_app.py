@@ -8,6 +8,7 @@
 import os
 
 from twisted.application.service import MultiService
+from scrapy_do.webservice import PublicHTMLRealm
 from scrapy_do.config import Config
 from twisted.trial import unittest
 from scrapy_do.app import ScrapyDoServiceMaker
@@ -96,25 +97,41 @@ class AppConfigTests(unittest.TestCase):
 
 
 #-------------------------------------------------------------------------------
-class AppTests(unittest.TestCase):
+class AppTestBase(unittest.TestCase):
 
     #---------------------------------------------------------------------------
-    def setUp(self):
+    def set_up(self, auth):
+        config_name = 'scrapy-do.conf'
+        if auth:
+            config_name = 'scrapy-do-auth.conf'
+
         service_maker = ScrapyDoServiceMaker()
         options = service_maker.options()
-        config_path = os.path.join(os.path.dirname(__file__), 'scrapy-do.conf')
-        self.config_path = config_path
+        config_path = os.path.join(os.path.dirname(__file__), config_name)
         options['config'] = config_path
         self.service = service_maker.makeService(options)
         self.service.startService()
+
+    #---------------------------------------------------------------------------
+    def tear_down(self):
+        return self.service.stopService()
+
+
+#-------------------------------------------------------------------------------
+class AppNoAuthTest(AppTestBase):
+
+    #---------------------------------------------------------------------------
+    def setUp(self):
+        self.set_up(False)
 
     #---------------------------------------------------------------------------
     def test_app(self):
         def test_body(response):
             resp = response[0]
             body = response[1]
-            return self.assertEqual(body.decode('utf-8'),
-                                    '<html>Hello, world!</html>')
+            self.assertEqual(resp.code, 200)
+            self.assertEqual(body.decode('utf-8'),
+                             '<html>Hello, world!</html>')
 
         d = web_retrieve_async('GET', 'http://127.0.0.1:7654')
         d.addCallback(test_body)
@@ -122,4 +139,35 @@ class AppTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def tearDown(self):
-        return self.service.stopService()
+        return self.tear_down()
+
+
+#-------------------------------------------------------------------------------
+class AppAuthTest(AppTestBase):
+
+    #---------------------------------------------------------------------------
+    def setUp(self):
+        self.set_up(True)
+
+    #---------------------------------------------------------------------------
+    def test_app(self):
+        def test_body(response):
+            resp = response[0]
+            body = response[1]
+            self.assertEqual(resp.code, 200)
+            self.assertEqual(body.decode('utf-8'),
+                             '<html>Hello, world!</html>')
+        d = web_retrieve_async('GET', 'http://127.0.0.1:7654',
+                               username='foo', password='bar')
+        d.addCallback(test_body)
+        return d
+
+    #---------------------------------------------------------------------------
+    def test_realm(self):
+        realm = PublicHTMLRealm(None)
+        self.assertRaises(NotImplementedError, realm.requestAvatar,
+                          avatar_id='foo', mind='bar')
+
+    #---------------------------------------------------------------------------
+    def tearDown(self):
+        return self.tear_down()
