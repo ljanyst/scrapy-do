@@ -11,6 +11,8 @@ from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
 from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
+from scrapy_do.config import NoSectionError
+from scrapy_do.utils import get_object
 from zope.interface import implementer
 from twisted.web import resource
 
@@ -18,11 +20,23 @@ from twisted.web import resource
 #-------------------------------------------------------------------------------
 class WebApp(resource.Resource):
 
-    isLeaf = True
-
     #---------------------------------------------------------------------------
     def __init__(self, config):
         super(WebApp, self).__init__()
+        self.config = config
+        self.putChild(b'', Home())
+
+        web_modules = config.get_options('web-modules')
+
+        for mod_name, mod_class_name in web_modules:
+            mod_class = get_object(mod_class_name)
+            self.putChild(mod_name.encode('utf-8'), mod_class(self))
+
+
+#-------------------------------------------------------------------------------
+class Home(resource.Resource):
+
+    isLeaf = True
 
     #---------------------------------------------------------------------------
     def render_GET(self, request):
@@ -33,6 +47,11 @@ class WebApp(resource.Resource):
 class JsonResource(resource.Resource):
 
     isLeaf = True
+
+    #---------------------------------------------------------------------------
+    def __init__(self, parent):
+        super(JsonResource, self).__init__()
+        self.parent = parent
 
     #---------------------------------------------------------------------------
     def render(self, request):
