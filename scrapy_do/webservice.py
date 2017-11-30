@@ -5,7 +5,9 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import os
 import json
+import psutil
 
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
@@ -61,6 +63,19 @@ class JsonResource(resource.Resource):
         request.setHeader('Content-Type', 'application/json')
         request.setHeader('Content-Length', len(encoded))
         return encoded.encode('utf-8')
+
+
+#-------------------------------------------------------------------------------
+class Status(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_GET(self, request):
+        p = psutil.Process(os.getpid())
+        resp = {
+            'memory-usage': p.memory_info().rss,
+            'cpu-usage': p.cpu_percent()
+        }
+        return resp
 
 
 #-------------------------------------------------------------------------------
