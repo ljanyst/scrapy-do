@@ -5,6 +5,8 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import json
+
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
@@ -25,6 +27,21 @@ class WebApp(resource.Resource):
     #---------------------------------------------------------------------------
     def render_GET(self, request):
         return "<html>Hello, world!</html>".encode('utf-8')
+
+
+#-------------------------------------------------------------------------------
+class JsonResource(resource.Resource):
+
+    isLeaf = True
+
+    #---------------------------------------------------------------------------
+    def render(self, request):
+        data = super(JsonResource, self).render(request)
+        encoder = json.JSONEncoder()
+        encoded = encoder.encode(data) + '\n'
+        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Content-Length', len(encoded))
+        return encoded.encode('utf-8')
 
 
 #-------------------------------------------------------------------------------
