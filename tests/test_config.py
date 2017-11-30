@@ -43,6 +43,9 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.config.get_int('tests', 'bool1')
 
+        with self.assertRaises(NoSectionError):
+            self.config.get_options('foo')
+
         self.assertEqual(self.config.get_bool('tests', 'bool1'), True)
         self.assertEqual(self.config.get_bool('tests', 'bool2'), False)
         self.assertEqual(self.config.get_int('tests', 'int1'), 42)
@@ -52,6 +55,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(self.config.get_string('tests', 'string1'), 'foo')
         self.assertEqual(self.config.get_string('tests', 'string2'), 'bar')
         self.assertEqual(self.config.get_int('tests', 'string2', 42), 42)
+        self.assertEqual(len(self.config.get_options('tests')), 8)
 
     #---------------------------------------------------------------------------
     def tearDown(self):
