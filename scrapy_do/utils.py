@@ -5,6 +5,8 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import importlib
+
 
 #-------------------------------------------------------------------------------
 def exc_repr(e):
@@ -13,3 +15,15 @@ def exc_repr(e):
     name.
     """
     return "{}: {}".format(type(e).__name__, str(e))
+
+
+#-------------------------------------------------------------------------------
+def get_object(name):
+    """
+    Retrieve an object from a module given its fully qualified name. For
+    example: `get_object('scrapy_do.webservice.Status')`
+    """
+    name = name.split('.')
+    object_name = name[-1]
+    module = importlib.import_module('.'.join(name[:-1]))
+    return getattr(module, object_name)
