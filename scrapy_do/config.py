@@ -81,3 +81,10 @@ class Config:
         :raises NoSectionError: section is missing and no default is given
         """
         return self.__get_with_type(self.conf.get, section, option, default)
+
+    #---------------------------------------------------------------------------
+    def get_options(self, section):
+        """
+        Get all options in a given section
+        """
+        return self.conf.items(section)
