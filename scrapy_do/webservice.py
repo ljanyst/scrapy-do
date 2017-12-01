@@ -13,7 +13,6 @@ from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
 from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
-from scrapy_do.config import NoSectionError
 from scrapy_do.utils import get_object
 from zope.interface import implementer
 from twisted.web import resource
