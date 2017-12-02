@@ -7,6 +7,8 @@
 
 import importlib
 
+from datetime import datetime
+
 
 #-------------------------------------------------------------------------------
 def exc_repr(e):
@@ -27,3 +29,41 @@ def get_object(name):
     object_name = name[-1]
     module = importlib.import_module('.'.join(name[:-1]))
     return getattr(module, object_name)
+
+
+#-------------------------------------------------------------------------------
+class TimeStamper:
+    """
+    Set the timestamp attribute of the object whenever the associated attribute
+    is set. For example:
+
+    :Example:
+
+        >>> class Test:
+        >>>     attr = TimeStamper('attr')
+        >>>
+        >>>     def __init__(self, attr):
+        >>>         self._attr = attr
+        >>>         self.timestamp = datetime.now()
+        >>> test = Test('foo')
+        >>> test.attr
+        'foo'
+        >>> test.timestamp
+        datetime.datetime(2017, 12, 2, 23, 0, 56, 671634)
+        >>> test.attr = 'bar'
+        >>> test.timestamp
+        datetime.datetime(2017, 12, 2, 23, 1, 9, 688899)
+    """
+
+    #---------------------------------------------------------------------------
+    def __init__(self, attr_name):
+        self.attr_name = attr_name
+
+    #---------------------------------------------------------------------------
+    def __get__(self, obj, obj_type):
+        return getattr(obj, self.attr_name)
+
+    #---------------------------------------------------------------------------
+    def __set__(self, obj, value):
+        obj.timestamp = datetime.now()
+        return setattr(obj, self.attr_name, value)
