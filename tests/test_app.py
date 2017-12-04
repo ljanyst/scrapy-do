@@ -8,6 +8,7 @@
 import os
 
 from twisted.application.service import MultiService
+from twisted.internet.defer import inlineCallbacks
 from scrapy_do.webservice import PublicHTMLRealm
 from scrapy_do.config import Config
 from twisted.trial import unittest
@@ -125,17 +126,13 @@ class AppNoAuthTest(AppTestBase):
         self.set_up(False)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
     def test_app(self):
-        def test_body(response):
-            resp = response[0]
-            body = response[1]
-            self.assertEqual(resp.code, 200)
-            self.assertEqual(body.decode('utf-8'),
-                             '<html>Hello, world!</html>')
-
-        d = web_retrieve_async('GET', 'http://127.0.0.1:7654')
-        d.addCallback(test_body)
-        return d
+        response = yield web_retrieve_async('GET', 'http://127.0.0.1:7654')
+        resp = response[0]
+        body = response[1]
+        self.assertEqual(resp.code, 200)
+        self.assertEqual(body.decode('utf-8'), '<html>Hello, world!</html>')
 
     #---------------------------------------------------------------------------
     def tearDown(self):
@@ -150,17 +147,14 @@ class AppAuthTest(AppTestBase):
         self.set_up(True)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
     def test_app(self):
-        def test_body(response):
-            resp = response[0]
-            body = response[1]
-            self.assertEqual(resp.code, 200)
-            self.assertEqual(body.decode('utf-8'),
-                             '<html>Hello, world!</html>')
-        d = web_retrieve_async('GET', 'http://127.0.0.1:7654',
-                               username='foo', password='bar')
-        d.addCallback(test_body)
-        return d
+        response = yield web_retrieve_async('GET', 'http://127.0.0.1:7654',
+                                            username='foo', password='bar')
+        resp = response[0]
+        body = response[1]
+        self.assertEqual(resp.code, 200)
+        self.assertEqual(body.decode('utf-8'), '<html>Hello, world!</html>')
 
     #---------------------------------------------------------------------------
     def test_realm(self):
