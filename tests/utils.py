@@ -82,6 +82,12 @@ def web_retrieve_async(method, url, headers=None, body_producer=None,
     auth_tried = [False]
 
     #---------------------------------------------------------------------------
+    # Process an error
+    #---------------------------------------------------------------------------
+    def cb_error(response):
+        finished.callback(response)
+
+    #---------------------------------------------------------------------------
     # Process the response
     #---------------------------------------------------------------------------
     def cb_response(response):
@@ -119,7 +125,7 @@ def web_retrieve_async(method, url, headers=None, body_producer=None,
                                                 auth_info)
             new_headers.addRawHeader('Authorization', digest_header)
             d = agent.request(method_enc, url_enc, new_headers, body_producer)
-            d.addCallback(cb_response)
+            d.addCallbacks(cb_response, cb_error)
 
         #-----------------------------------------------------------------------
         # Fetch the body
@@ -127,5 +133,5 @@ def web_retrieve_async(method, url, headers=None, body_producer=None,
         else:
             response.deliverBody(BodyCapture(response, finished))
 
-    d.addCallback(cb_response)
+    d.addCallbacks(cb_response, cb_error)
     return finished
