@@ -12,6 +12,7 @@ import psutil
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
+from twisted.web.server import NOT_DONE_YET
 from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
 from scrapy_do.utils import get_object
 from zope.interface import implementer
@@ -56,13 +57,19 @@ class JsonResource(resource.Resource):
         self.parent = parent
 
     #---------------------------------------------------------------------------
+    def render_json(self, request, data):
+        json_data = json.dumps(data) + '\n'
+        json_data = json_data.encode('utf-8')
+        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Content-Length', len(json_data))
+        return json_data
+
+    #---------------------------------------------------------------------------
     def render(self, request):
         data = super(JsonResource, self).render(request)
-        encoder = json.JSONEncoder()
-        encoded = encoder.encode(data) + '\n'
-        request.setHeader('Content-Type', 'application/json')
-        request.setHeader('Content-Length', len(encoded))
-        return encoded.encode('utf-8')
+        if data == NOT_DONE_YET:
+            return data
+        return self.render_json(request, data)
 
 
 #-------------------------------------------------------------------------------
