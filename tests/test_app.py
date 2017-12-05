@@ -9,10 +9,11 @@ import os
 
 from twisted.application.service import MultiService
 from twisted.internet.defer import inlineCallbacks
-from scrapy_do.webservice import PublicHTMLRealm
+from scrapy_do.webservice import PublicHTMLRealm, get_web_app
 from scrapy_do.config import Config
 from twisted.trial import unittest
 from scrapy_do.app import ScrapyDoServiceMaker
+from unittest.mock import Mock
 from .utils import web_retrieve_async
 
 
@@ -72,16 +73,18 @@ class AppConfigTests(unittest.TestCase):
         # Correct HTTP config
         #-----------------------------------------------------------------------
         config = Config([self.config_path])
-        self.service_maker._configure_web_server(config)
+        controller = Mock()
+        self.service_maker._configure_web_server(config, controller)
 
         #-----------------------------------------------------------------------
         # Correct HTTPS config
         #-----------------------------------------------------------------------
         config = Config([self.config_path])
+        controller = Mock()
         config.conf['web']['https'] = 'on'
         config.conf['web']['key'] = self.key_file
         config.conf['web']['cert'] = self.cert_file
-        self.service_maker._configure_web_server(config)
+        self.service_maker._configure_web_server(config, controller)
 
     #---------------------------------------------------------------------------
     def test_service_maker(self):
@@ -90,6 +93,17 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         config_path = os.path.join(os.path.dirname(__file__),
                                    'scrapy-do-broken-port.conf')
+        self.config_path = config_path
+        options = self.service_maker.options()
+        options['config'] = config_path
+        service = self.service_maker.makeService(options)
+        self.assertIsInstance(service, MultiService)
+
+        #-----------------------------------------------------------------------
+        # Broken controller
+        #-----------------------------------------------------------------------
+        config_path = os.path.join(os.path.dirname(__file__),
+                                   'scrapy-do-broken-controller.conf')
         self.config_path = config_path
         options = self.service_maker.options()
         options['config'] = config_path
@@ -158,9 +172,17 @@ class AppAuthTest(AppTestBase):
 
     #---------------------------------------------------------------------------
     def test_realm(self):
-        realm = PublicHTMLRealm(None)
+        config = Mock()
+        controller = Mock()
+        realm = PublicHTMLRealm(config, controller)
         self.assertRaises(NotImplementedError, realm.requestAvatar,
                           avatar_id='foo', mind='bar')
+
+    #---------------------------------------------------------------------------
+    def test_site(self):
+        config = Mock()
+        controller = Mock()
+        get_web_app(config, controller)
 
     #---------------------------------------------------------------------------
     def tearDown(self):
