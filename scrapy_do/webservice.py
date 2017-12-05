@@ -22,9 +22,10 @@ from twisted.web import resource
 class WebApp(resource.Resource):
 
     #---------------------------------------------------------------------------
-    def __init__(self, config):
+    def __init__(self, config, controller):
         super(WebApp, self).__init__()
         self.config = config
+        self.controller = controller
         self.putChild(b'', Home())
 
         web_modules = config.get_options('web-modules')
@@ -82,26 +83,28 @@ class Status(JsonResource):
 class PublicHTMLRealm:
 
     #---------------------------------------------------------------------------
-    def __init__(self, config):
+    def __init__(self, config, controller):
         super(PublicHTMLRealm, self).__init__()
         self.config = config
+        self.controller = controller
 
     #---------------------------------------------------------------------------
     def requestAvatar(self, avatar_id, mind, *interfaces):
         if IResource in interfaces:
-            return (IResource, WebApp(self.config), lambda: None)
+            return (IResource, WebApp(self.config, self.controller),
+                    lambda: None)
         raise NotImplementedError()
 
 
 #-------------------------------------------------------------------------------
-def get_web_app(config):
+def get_web_app(config, controller):
     auth = config.get_bool('web', 'auth', False)
     if auth:
         auth_file = config.get_string('web', 'auth-db')
-        portal = Portal(PublicHTMLRealm(config),
+        portal = Portal(PublicHTMLRealm(config, controller),
                         [FilePasswordDB(auth_file)])
         credential_factory = DigestCredentialFactory('md5', b'scrapy-do')
         resource = HTTPAuthSessionWrapper(portal, [credential_factory])
         return resource
 
-    return WebApp(config)
+    return WebApp(config, controller)

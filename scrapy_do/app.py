@@ -16,6 +16,7 @@ from zope.interface import implementer
 from twisted.web import server
 
 from .webservice import get_web_app
+from .controller import Controller
 from .config import Config
 from .utils import exc_repr
 
@@ -63,11 +64,11 @@ class ScrapyDoServiceMaker():
         return interface, port, https, key_file, cert_file, auth, auth_file
 
     #---------------------------------------------------------------------------
-    def _configure_web_server(self, config):
+    def _configure_web_server(self, config, controller):
         interface, port, https, key_file, cert_file, _, _ = \
             self._validate_web_config(config)
 
-        site = server.Site(get_web_app(config))
+        site = server.Site(get_web_app(config, controller))
         if https:
             context = DefaultOpenSSLContextFactory(key_file, cert_file)
             web_server = SSLServer(port, site, context, interface=interface)
@@ -89,10 +90,20 @@ class ScrapyDoServiceMaker():
         config = Config([config_file])
 
         #-----------------------------------------------------------------------
+        # Set up the controller
+        #-----------------------------------------------------------------------
+        try:
+            controller = Controller(config)
+        except Exception as e:
+            log.msg(format="Unable to set up the controller: %(reason)s",
+                    reason=exc_repr(e), logLevel=logging.ERROR)
+            return top_service
+
+        #-----------------------------------------------------------------------
         # Set up the web server
         #-----------------------------------------------------------------------
         try:
-            web_server = self._configure_web_server(config)
+            web_server = self._configure_web_server(config, controller)
             web_server.setServiceParent(top_service)
         except Exception as e:
             log.msg(format="Scrapy-Do web interface could not have been "
