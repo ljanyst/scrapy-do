@@ -40,7 +40,7 @@ class TimeStamper:
     :Example:
 
         >>> class Test:
-        >>>     attr = TimeStamper('attr')
+        >>>     attr = TimeStamper('_attr')
         >>>
         >>>     def __init__(self, attr):
         >>>         self._attr = attr
