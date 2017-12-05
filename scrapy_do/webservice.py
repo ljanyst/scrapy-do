@@ -9,6 +9,7 @@ import os
 import json
 import psutil
 
+from twisted.internet.defer import inlineCallbacks
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
@@ -83,6 +84,41 @@ class Status(JsonResource):
             'cpu-usage': p.cpu_percent()
         }
         return resp
+
+
+#-------------------------------------------------------------------------------
+class PushProject(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_POST(self, request):
+        @inlineCallbacks
+        def do_async():
+            try:
+                name = request.args[b'name'][0].decode('utf-8')
+                data = request.args[b'archive'][0]
+            except KeyError as e:
+                result = {
+                    'status': 'error',
+                    'msg': 'Missing argument: ' + str(e)
+                }
+                request.setResponseCode(400)
+                request.write(self.render_json(request, result))
+                request.finish()
+                return
+
+            try:
+                controller = self.parent.controller
+
+                spiders = yield controller.push_project(name, data)
+                result = {'status': 'ok', 'spiders': spiders}
+            except Exception as e:
+                request.setResponseCode(400)
+                result = {'status': 'error', 'msg': str(e)}
+
+            request.write(self.render_json(request, result))
+            request.finish()
+        do_async()
+        return NOT_DONE_YET
 
 
 #-------------------------------------------------------------------------------
