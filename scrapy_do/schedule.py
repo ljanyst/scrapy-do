@@ -52,6 +52,20 @@ class Job:
         self.timestamp = timestamp or datetime.now()
         self._duration = duration
 
+    #---------------------------------------------------------------------------
+    def to_dict(self):
+        d = {
+            'identifier': self.identifier,
+            'status': self.status.name,
+            'actor': self.actor.name,
+            'schedule': self.schedule,
+            'project': self.project,
+            'spider': self.spider,
+            'timestamp': str(self.timestamp),
+            'duration': self.duration
+        }
+        return d
+
 
 #-------------------------------------------------------------------------------
 def _record_to_job(x):
