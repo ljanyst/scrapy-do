@@ -54,6 +54,15 @@ class Job:
 
 
 #-------------------------------------------------------------------------------
+def _record_to_job(x):
+    job = Job(status=Status(x[1]), actor=Actor(x[2]), schedule=x[3],
+              project=x[4], spider=x[5], timestamp=dateutil.parser.parse(x[6]),
+              duration=x[7])
+    job.identifier = x[0]
+    return job
+
+
+#-------------------------------------------------------------------------------
 class Schedule:
     """
     A persistent database of jobs
@@ -89,30 +98,20 @@ class Schedule:
         query = "SELECT * FROM {table} WHERE status=? ORDER BY timestamp DESC"
         query = query.format(table=self.table)
         response = self.db.execute(query, (job_status.value, ))
-        jobs = []
-        for x in response:
-            job = Job(status=Status(x[1]), actor=Actor(x[2]), schedule=x[3],
-                      project=x[4], spider=x[5],
-                      timestamp=dateutil.parser.parse(x[6]),
-                      duration=x[7])
-            job.identifier = x[0]
-            jobs.append(job)
-        return jobs
+        return [_record_to_job(rec) for rec in response]
 
     #---------------------------------------------------------------------------
-    def add_job(self, job):
+    def get_job(self, identifier):
         """
-        Add a job to the database
+        Retrieve a job by id
         """
-        query = "INSERT INTO {table}" \
-                "(identifier, status, actor, schedule, project, spider, " \
-                "timestamp, duration) " \
-                "values (?, ?, ?, ?, ?, ?, ?, ?)"
+        query = "SELECT * FROM {table} WHERE identifier=?"
         query = query.format(table=self.table)
-        self.db.execute(query, (job.identifier, job.status.value,
-                                job.actor.value, job.schedule, job.project,
-                                job.spider, job.timestamp, job.duration))
-        self.db.commit()
+        response = self.db.execute(query, (identifier, ))
+        rec = response.fetchone()
+        if rec is None:
+            raise KeyError('No such job: "{}"'.format(identifier))
+        return _record_to_job(rec)
 
     #---------------------------------------------------------------------------
     def commit_job(self, job):
