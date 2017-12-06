@@ -75,3 +75,15 @@ class ScheduleTests(unittest.TestCase):
         self.schedule.remove_job(job.identifier)
         scheduled_jobs = self.schedule.get_jobs(Status.SCHEDULED)
         self.assertEqual(len(scheduled_jobs), 1)
+
+    #---------------------------------------------------------------------------
+    def test_dict(self):
+        job = self.schedule.get_jobs(Status.SCHEDULED)[0]
+        job_data = job.to_dict()
+        keys = ['identifier', 'status', 'actor', 'project', 'spider',
+                'timestamp', 'duration']
+        for k in keys:
+            self.assertIn(k, job_data)
+        self.assertIsInstance(job_data['timestamp'], str)
+        self.assertIsInstance(job_data['status'], str)
+        self.assertIsInstance(job_data['actor'], str)
