@@ -67,10 +67,22 @@ class JsonResource(resource.Resource):
 
     #---------------------------------------------------------------------------
     def render(self, request):
-        data = super(JsonResource, self).render(request)
-        if data == NOT_DONE_YET:
-            return data
-        return self.render_json(request, data)
+        try:
+            data = super(JsonResource, self).render(request)
+            if data == NOT_DONE_YET:
+                return data
+            data = {
+                **{'status': 'ok'},
+                **data
+            }
+            return self.render_json(request, data)
+        except Exception as e:
+            request.setResponseCode(400)
+            data = {
+                'status': 'error',
+                'msg': str(e)
+            }
+            return self.render_json(request, data)
 
 
 #-------------------------------------------------------------------------------
