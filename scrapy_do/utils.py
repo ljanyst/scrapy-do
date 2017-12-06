@@ -72,3 +72,18 @@ class TimeStamper:
 #-------------------------------------------------------------------------------
 def check_scheduling_spec(spec):
     pass
+
+
+#-------------------------------------------------------------------------------
+def arg_require_all(dict, args):
+    for arg in args:
+        if arg not in dict:
+            raise KeyError('Missing argument "{}"'.format(arg))
+
+
+#-------------------------------------------------------------------------------
+def arg_require_any(dict, args):
+    for arg in args:
+        if arg in dict:
+            return
+    raise KeyError('Neither argument present: "{}"'.format(str(args)))
