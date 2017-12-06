@@ -67,3 +67,8 @@ class TimeStamper:
     def __set__(self, obj, value):
         obj.timestamp = datetime.now()
         return setattr(obj, self.attr_name, value)
+
+
+#-------------------------------------------------------------------------------
+def check_scheduling_spec(spec):
+    pass
