@@ -19,13 +19,19 @@ from twisted.trial import unittest
 class ControllerTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
+    def setUp(self):
+        with open('tests/quotesbot.zip', 'rb') as f:
+            self.project_archive_data = f.read()
+
+        self.temp_dir = tempfile.mkdtemp()
+        self.config = Mock()
+        self.config.get_string.return_value = self.temp_dir
+        self.controller = Controller(self.config)
+
+    #---------------------------------------------------------------------------
     def test_setup(self):
-        temp_dir = tempfile.mkdtemp()
-        config = Mock()
-        config.get_string.return_value = temp_dir
-        Controller(config)  # no metadata file
-        Controller(config)  # metadata file exists
-        shutil.rmtree(temp_dir)
+        Controller(self.config)  # no metadata file
+        Controller(self.config)  # metadata file exists
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
@@ -33,16 +39,10 @@ class ControllerTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Set up
         #-----------------------------------------------------------------------
-        temp_dir = tempfile.mkdtemp()
-        config = Mock()
-        config.get_string.return_value = temp_dir
-        controller = Controller(config)
-
-        with open('tests/quotesbot.zip', 'rb') as f:
-            data = f.read()
-
         with open('tests/broken-proj.zip', 'rb') as f:
             broken_data = f.read()
+
+        controller = self.controller
 
         #-----------------------------------------------------------------------
         # Configure the error cases tests
@@ -104,13 +104,13 @@ class ControllerTests(unittest.TestCase):
             mock['mkdtemp'].return_value = temp_test_dir
             mock['mkstemp'].return_value = temp_test_file
 
-            spiders = yield controller.push_project('quotesbot', data)
+            spiders = yield controller.push_project('quotesbot',
+                                                    self.project_archive_data)
             self.assertFalse(os.path.exists(temp_test_dir))
             self.assertFalse(os.path.exists(temp_test_file[1]))
             self.assertIn('toscrape-css', spiders)
             self.assertIn('toscrape-xpath', spiders)
 
-        #-----------------------------------------------------------------------
-        # Clean up
-        #-----------------------------------------------------------------------
-        shutil.rmtree(temp_dir)
+    #---------------------------------------------------------------------------
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
