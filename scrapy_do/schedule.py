@@ -114,6 +114,21 @@ class Schedule:
         return _record_to_job(rec)
 
     #---------------------------------------------------------------------------
+    def add_job(self, job):
+        """
+        Add a job to the database
+        """
+        query = "INSERT INTO {table}" \
+                "(identifier, status, actor, schedule, project, spider, " \
+                "timestamp, duration) " \
+                "values (?, ?, ?, ?, ?, ?, ?, ?)"
+        query = query.format(table=self.table)
+        self.db.execute(query, (job.identifier, job.status.value,
+                                job.actor.value, job.schedule, job.project,
+                                job.spider, job.timestamp, job.duration))
+        self.db.commit()
+
+    #---------------------------------------------------------------------------
     def commit_job(self, job):
         """
         Modify an existing job
