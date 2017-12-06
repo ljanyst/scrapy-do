@@ -11,6 +11,7 @@ import os
 
 from twisted.internet.defer import inlineCallbacks
 from scrapy_do.controller import Controller
+from scrapy_do.schedule import Status
 from unittest.mock import Mock, patch, DEFAULT
 from twisted.trial import unittest
 
@@ -110,6 +111,65 @@ class ControllerTests(unittest.TestCase):
             self.assertFalse(os.path.exists(temp_test_file[1]))
             self.assertIn('toscrape-css', spiders)
             self.assertIn('toscrape-xpath', spiders)
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_accessors_mutators(self):
+        #-----------------------------------------------------------------------
+        # Set up
+        #-----------------------------------------------------------------------
+        controller = self.controller
+        spiders_p = yield controller.push_project('quotesbot',
+                                                  self.project_archive_data)
+        self.assertIn('toscrape-css', spiders_p)
+        self.assertIn('toscrape-xpath', spiders_p)
+
+        #-----------------------------------------------------------------------
+        # Project/spider accessors
+        #-----------------------------------------------------------------------
+        projects = controller.get_projects()
+        self.assertIn('quotesbot', projects)
+        spiders = controller.get_spiders('quotesbot')
+        for spider in spiders_p:
+            self.assertIn(spider, spiders)
+
+        self.assertRaises(KeyError,
+                          f=controller.get_spiders,
+                          project_name='foo')
+
+        #-----------------------------------------------------------------------
+        # Job scheduling
+        #-----------------------------------------------------------------------
+        self.assertRaises(KeyError,
+                          f=controller.schedule_job,
+                          project='foo', spider='bar', when='bar')
+        self.assertRaises(KeyError,
+                          f=controller.schedule_job,
+                          project='quotesbot', spider='bar', when='bar')
+
+        job1_id = controller.schedule_job('quotesbot', 'toscrape-css',
+                                          'every 25 minutes')
+        job2_id = controller.schedule_job('quotesbot', 'toscrape-xpath', 'now')
+        job3_id = controller.schedule_job('quotesbot', 'toscrape-css', 'now')
+
+        #-----------------------------------------------------------------------
+        # Retrieve the jobs
+        #-----------------------------------------------------------------------
+        job1 = controller.get_job(job1_id)
+        job2 = controller.get_job(job2_id)
+        job3 = controller.get_job(job3_id)
+
+        self.assertEqual(job1.identifier, job1_id)
+        self.assertEqual(job2.identifier, job2_id)
+        self.assertEqual(job3.identifier, job3_id)
+        self.assertEqual(job1.status, Status.SCHEDULED)
+        self.assertEqual(job2.status, Status.PENDING)
+        self.assertEqual(job3.status, Status.PENDING)
+
+        scheduled_jobs = controller.get_jobs(Status.SCHEDULED)
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        self.assertEqual(len(scheduled_jobs), 1)
+        self.assertEqual(len(pending_jobs), 2)
 
     #---------------------------------------------------------------------------
     def tearDown(self):
