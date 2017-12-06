@@ -5,16 +5,63 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import tempfile
+import shutil
 import os
 
 from twisted.application.service import MultiService
 from twisted.internet.defer import inlineCallbacks
 from scrapy_do.webservice import PublicHTMLRealm, get_web_app
-from scrapy_do.config import Config
 from twisted.trial import unittest
 from scrapy_do.app import ScrapyDoServiceMaker
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from .utils import web_retrieve_async
+from copy import deepcopy
+
+
+#-------------------------------------------------------------------------------
+def build_mock_config(data):
+    def get(section, option, default, dtype):
+        try:
+            val = data[section][option]
+            if isinstance(val, dtype):
+                return val
+            if isinstance(val, Exception):
+                raise val
+            if dtype == str:
+                return str(val)
+            raise ValueError
+        except (KeyError, ValueError):
+            if default is not None:
+                return default
+            raise
+
+    mock = Mock()
+    mock.get_bool.side_effect = lambda s, o, d=None: get(s, o, d, bool)
+    mock.get_int.side_effect = lambda s, o, d=None: get(s, o, d, int)
+    mock.get_float.side_effect = lambda s, o, d=None: get(s, o, d, float)
+    mock.get_string.side_effect = lambda s, o, d=None: get(s, o, d, str)
+    mock.get_options.side_effect = lambda s: data[s].items()
+    return mock
+
+
+#-------------------------------------------------------------------------------
+default_config = {
+    'scrapy-do': {
+        'project-store': 'projects'
+    },
+    'web': {
+        'interface': '127.0.0.1',
+        'port': 7654,
+        'https': False,
+        'auth': False,
+        'cert': 'scrapy-do.crt',
+        'key': 'scrapy-do.key'
+    },
+    'web-modules': {
+        'status.json': 'scrapy_do.webservice.Status'
+    }
+}
 
 
 #-------------------------------------------------------------------------------
@@ -23,9 +70,15 @@ class AppConfigTests(unittest.TestCase):
     #---------------------------------------------------------------------------
     def setUp(self):
         current_path = os.path.dirname(__file__)
-        self.key_file = os.path.join(current_path, 'scrapy-do.key')
-        self.cert_file = os.path.join(current_path, 'scrapy-do.crt')
-        self.config_path = os.path.join(current_path, 'scrapy-do.conf')
+        cert_file = os.path.join(current_path, 'scrapy-do.crt')
+        key_file = os.path.join(current_path, 'scrapy-do.key')
+        self.pstore_path = tempfile.mkdtemp()
+
+        self.config = deepcopy(default_config)
+        self.config['scrapy-do']['project-store'] = self.pstore_path
+        self.config['web']['cert'] = cert_file
+        self.config['web']['key'] = key_file
+
         self.service_maker = ScrapyDoServiceMaker()
 
     #---------------------------------------------------------------------------
@@ -33,36 +86,32 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Correct HTTP config
         #-----------------------------------------------------------------------
-        config = Config([self.config_path])
+        config = build_mock_config(self.config)
         web_config = self.service_maker._validate_web_config(config)
         self.assertEqual(len(web_config), 7)
 
         #-----------------------------------------------------------------------
         # Correct HTTPS config
         #-----------------------------------------------------------------------
-        config = Config([self.config_path])
-        config.conf['web']['https'] = 'on'
-        config.conf['web']['key'] = self.key_file
-        config.conf['web']['cert'] = self.cert_file
+        self.config['web']['https'] = True
         web_config = self.service_maker._validate_web_config(config)
         self.assertEqual(len(web_config), 7)
+        self.config['web']['https'] = False
 
         #-----------------------------------------------------------------------
         # Incorrect HTTP config
         #-----------------------------------------------------------------------
-        config = Config([self.config_path])
-        config.conf['web']['port'] = 'asdf'
+        self.config['web']['port'] = 'asdf'
         self.assertRaises(ValueError,
                           f=self.service_maker._validate_web_config,
                           config=config)
+        self.config['web']['port'] = 7654
 
         #-----------------------------------------------------------------------
         # Incorrect HTTPS config
         #-----------------------------------------------------------------------
-        config = Config([self.config_path])
-        config.conf['web']['https'] = 'on'
-        config.conf['web']['key'] = self.key_file + 'foo'
-        config.conf['web']['cert'] = self.cert_file
+        self.config['web']['https'] = True
+        self.config['web']['key'] += 'foo'
         self.assertRaises(FileNotFoundError,
                           f=self.service_maker._validate_web_config,
                           config=config)
@@ -72,18 +121,14 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Correct HTTP config
         #-----------------------------------------------------------------------
-        config = Config([self.config_path])
+        config = build_mock_config(self.config)
         controller = Mock()
         self.service_maker._configure_web_server(config, controller)
 
         #-----------------------------------------------------------------------
         # Correct HTTPS config
         #-----------------------------------------------------------------------
-        config = Config([self.config_path])
-        controller = Mock()
-        config.conf['web']['https'] = 'on'
-        config.conf['web']['key'] = self.key_file
-        config.conf['web']['cert'] = self.cert_file
+        self.config['web']['https'] = True
         self.service_maker._configure_web_server(config, controller)
 
     #---------------------------------------------------------------------------
@@ -91,24 +136,28 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Incorrect HTTP config
         #-----------------------------------------------------------------------
-        config_path = os.path.join(os.path.dirname(__file__),
-                                   'scrapy-do-broken-port.conf')
-        self.config_path = config_path
+        config_class = Mock()
+        config = build_mock_config(self.config)
+        config_class.return_value = config
         options = self.service_maker.options()
-        options['config'] = config_path
-        service = self.service_maker.makeService(options)
-        self.assertIsInstance(service, MultiService)
+        with patch('scrapy_do.app.Config', config_class):
+            self.config['web']['port'] = 'asdf'
+            service = self.service_maker.makeService(options)
+            self.assertIsInstance(service, MultiService)
+            self.config['web']['port'] = 7654
 
         #-----------------------------------------------------------------------
         # Broken controller
         #-----------------------------------------------------------------------
-        config_path = os.path.join(os.path.dirname(__file__),
-                                   'scrapy-do-broken-controller.conf')
-        self.config_path = config_path
-        options = self.service_maker.options()
-        options['config'] = config_path
-        service = self.service_maker.makeService(options)
-        self.assertIsInstance(service, MultiService)
+        with patch('scrapy_do.app.Config', config_class):
+            self.config['scrapy-do']['project-store'] = '/dev/null/foo'
+            service = self.service_maker.makeService(options)
+            self.assertIsInstance(service, MultiService)
+            self.config['scrapy-do']['project-store'] = self.pstore_path
+
+    #---------------------------------------------------------------------------
+    def tearDown(self):
+        shutil.rmtree(self.pstore_path)
 
 
 #-------------------------------------------------------------------------------
@@ -116,19 +165,30 @@ class AppTestBase(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def set_up(self, auth):
-        config_name = 'scrapy-do.conf'
-        if auth:
-            config_name = 'scrapy-do-auth.conf'
+        self.pstore_path = tempfile.mkdtemp()
+        self.auth_file = tempfile.mkstemp()
+        with open(self.auth_file[0], 'w') as f:
+            print('foo:bar', file=f)
+
+        self.config = deepcopy(default_config)
+        self.config['scrapy-do']['project-store'] = self.pstore_path
+        self.config['web']['auth-db'] = self.auth_file[1]
+        self.config['web']['auth'] = auth
 
         service_maker = ScrapyDoServiceMaker()
         options = service_maker.options()
-        config_path = os.path.join(os.path.dirname(__file__), config_name)
-        options['config'] = config_path
-        self.service = service_maker.makeService(options)
+
+        config_class = Mock()
+        config = build_mock_config(self.config)
+        config_class.return_value = config
+        with patch('scrapy_do.app.Config', config_class):
+            self.service = service_maker.makeService(options)
         self.service.startService()
 
     #---------------------------------------------------------------------------
     def tear_down(self):
+        shutil.rmtree(self.pstore_path)
+        os.remove(self.auth_file[1])
         return self.service.stopService()
 
 
