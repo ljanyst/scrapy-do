@@ -48,6 +48,12 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(len(pending_jobs), 1)
         self.compare_jobs(self.job3, pending_jobs[0])
 
+        job = self.schedule.get_job(scheduled_jobs[0].identifier)
+        self.compare_jobs(job, scheduled_jobs[0])
+
+        with self.assertRaises(KeyError):
+            self.schedule.get_job(identifier=scheduled_jobs[0].identifier + 'a')
+
     #---------------------------------------------------------------------------
     def test_change(self):
         pending_jobs = self.schedule.get_jobs(Status.PENDING)
