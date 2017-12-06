@@ -14,6 +14,8 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from distutils.spawn import find_executable
 from collections import namedtuple
+from .schedule import Schedule, Job, Actor, Status
+from .utils import check_scheduling_spec
 
 
 #-------------------------------------------------------------------------------
@@ -32,6 +34,8 @@ class Controller:
         self.config = config
         self.project_store = config.get_string('scrapy-do', 'project-store')
         self.metadata_path = os.path.join(self.project_store, 'metadata.pkl')
+        self.schedule_path = os.path.join(self.project_store, 'schedule.db')
+        self.schedule = Schedule(self.schedule_path)
 
         if os.path.exists(self.metadata_path):
             with open(self.metadata_path, 'rb') as f:
@@ -101,3 +105,38 @@ class Controller:
             pickle.dump(self.projects, f)
 
         returnValue(prj.spiders)
+
+    #---------------------------------------------------------------------------
+    def get_projects(self):
+        return list(self.projects.keys())
+
+    #---------------------------------------------------------------------------
+    def get_spiders(self, project_name):
+        if project_name not in self.projects.keys():
+            raise KeyError('Unknown project ' + project_name)
+        return self.projects[project_name].spiders
+
+    #---------------------------------------------------------------------------
+    def schedule_job(self, project, spider, when):
+        if project not in self.projects.keys():
+            raise KeyError('Unknown project ' + project)
+
+        if spider not in self.projects[project].spiders:
+            raise KeyError('Unknown spider {}/{}'.format(project, spider))
+
+        if when != 'now':
+            check_scheduling_spec(when)
+
+        status = Status.PENDING if when == 'now' else Status.SCHEDULED
+        job = Job(status, Actor.USER, when, project, spider)
+        self.schedule.add_job(job)
+
+        return job.identifier
+
+    #---------------------------------------------------------------------------
+    def get_jobs(self, job_status):
+        return self.schedule.get_jobs(job_status)
+
+    #---------------------------------------------------------------------------
+    def get_job(self, job_id):
+        return self.schedule.get_job(job_id)
