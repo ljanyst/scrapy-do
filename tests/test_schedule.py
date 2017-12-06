@@ -30,20 +30,23 @@ class ScheduleTests(unittest.TestCase):
         self.schedule.add_job(self.job3)
 
     #---------------------------------------------------------------------------
+    def compare_jobs(self, job1, job2):
+        self.assertEqual(job1.identifier, job2.identifier)
+        self.assertEqual(job1.status, job2.status)
+        self.assertEqual(job1.actor, job2.actor)
+        self.assertEqual(job1.schedule, job2.schedule)
+        self.assertEqual(job1.project, job2.project)
+        self.assertEqual(job1.spider, job2.spider)
+        self.assertEqual(job1.timestamp, job2.timestamp)
+        self.assertEqual(job1.duration, job2.duration)
+
+    #---------------------------------------------------------------------------
     def test_retrieval(self):
         scheduled_jobs = self.schedule.get_jobs(Status.SCHEDULED)
         pending_jobs = self.schedule.get_jobs(Status.PENDING)
         self.assertEqual(len(scheduled_jobs), 2)
         self.assertEqual(len(pending_jobs), 1)
-        job = pending_jobs[0]
-        self.assertEqual(self.job3.identifier, job.identifier)
-        self.assertEqual(self.job3.status, job.status)
-        self.assertEqual(self.job3.actor, job.actor)
-        self.assertEqual(self.job3.schedule, job.schedule)
-        self.assertEqual(self.job3.project, job.project)
-        self.assertEqual(self.job3.spider, job.spider)
-        self.assertEqual(self.job3.timestamp, job.timestamp)
-        self.assertEqual(self.job3.duration, job.duration)
+        self.compare_jobs(self.job3, pending_jobs[0])
 
     #---------------------------------------------------------------------------
     def test_change(self):
@@ -56,8 +59,7 @@ class ScheduleTests(unittest.TestCase):
         pending_jobs = self.schedule.get_jobs(Status.PENDING)
         self.assertEqual(len(running_jobs), 1)
         self.assertEqual(len(pending_jobs), 0)
-        job_r = running_jobs[0]
-        self.assertEqual(job.timestamp, job_r.timestamp)
+        self.compare_jobs(job, running_jobs[0])
 
     #---------------------------------------------------------------------------
     def test_remove(self):
