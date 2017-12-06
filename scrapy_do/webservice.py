@@ -18,6 +18,8 @@ from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
 from scrapy_do.utils import get_object
 from zope.interface import implementer
 from twisted.web import resource
+from .schedule import Status as JobStatus
+from .utils import arg_require_all, arg_require_any
 
 
 #-------------------------------------------------------------------------------
@@ -131,6 +133,57 @@ class PushProject(JsonResource):
             request.finish()
         do_async()
         return NOT_DONE_YET
+
+
+#-------------------------------------------------------------------------------
+class ListProjects(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_GET(self, request):
+        projects = self.parent.controller.get_projects()
+        return {'projects': projects}
+
+
+#-------------------------------------------------------------------------------
+class ListSpiders(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_GET(self, request):
+        arg_require_all(request.args, [b'project'])
+        project = request.args[b'project'][0].decode('utf-8')
+
+        spiders = self.parent.controller.get_spiders(project)
+        return {'project': project, 'spiders': spiders}
+
+
+#-------------------------------------------------------------------------------
+class ScheduleJob(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_POST(self, request):
+        arg_require_all(request.args, [b'project', b'spider', b'when'])
+        project = request.args[b'project'][0].decode('utf-8')
+        spider = request.args[b'spider'][0].decode('utf-8')
+        when = request.args[b'when'][0].decode('utf-8')
+
+        job_id = self.parent.controller.schedule_job(project, spider, when)
+        return {'identifier': job_id}
+
+
+#-------------------------------------------------------------------------------
+class ListJobs(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_GET(self, request):
+        arg_require_any(request.args, [b'status', b'id'])
+        if b'status' in request.args:
+            status = JobStatus[request.args[b'status'][0].decode('utf-8')]
+            jobs = self.parent.controller.get_jobs(status)
+        else:
+            identifier = request.args[b'id'][0].decode('utf-8')
+            jobs = [self.parent.controller.get_job(identifier)]
+
+        return {'jobs': [job.to_dict() for job in jobs]}
 
 
 #-------------------------------------------------------------------------------
