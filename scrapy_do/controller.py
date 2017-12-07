@@ -117,7 +117,7 @@ class Controller:
         return self.projects[project_name].spiders
 
     #---------------------------------------------------------------------------
-    def schedule_job(self, project, spider, when):
+    def schedule_job(self, project, spider, when, actor=Actor.USER):
         if project not in self.projects.keys():
             raise KeyError('Unknown project ' + project)
 
@@ -128,7 +128,7 @@ class Controller:
             check_scheduling_spec(when)
 
         status = Status.PENDING if when == 'now' else Status.SCHEDULED
-        job = Job(status, Actor.USER, when, project, spider)
+        job = Job(status, actor, when, project, spider)
         self.schedule.add_job(job)
 
         return job.identifier
