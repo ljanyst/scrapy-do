@@ -32,6 +32,7 @@ setup(
         'Environment :: No Input/Output (Daemon)',
     ],
     install_requires = [
-        'scrapy', 'twisted', 'pyOpenSSL', 'psutil', 'python-dateutil'
+        'scrapy', 'twisted', 'pyOpenSSL', 'psutil', 'python-dateutil',
+        'schedule'
     ]
 )
