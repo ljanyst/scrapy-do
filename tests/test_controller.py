@@ -11,7 +11,8 @@ import os
 
 from twisted.internet.defer import inlineCallbacks
 from scrapy_do.controller import Controller
-from scrapy_do.schedule import Status
+from scrapy_do.schedule import Status, Actor
+from scrapy_do.utils import twisted_sleep
 from unittest.mock import Mock, patch, DEFAULT
 from twisted.trial import unittest
 
@@ -170,6 +171,36 @@ class ControllerTests(unittest.TestCase):
         pending_jobs = controller.get_jobs(Status.PENDING)
         self.assertEqual(len(scheduled_jobs), 1)
         self.assertEqual(len(pending_jobs), 2)
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_run_scheduler(self):
+        #-----------------------------------------------------------------------
+        # Set up
+        #-----------------------------------------------------------------------
+        controller = self.controller
+        spiders_p = yield controller.push_project('quotesbot',
+                                                  self.project_archive_data)
+        self.assertIn('toscrape-css', spiders_p)
+        self.assertIn('toscrape-xpath', spiders_p)
+
+        #-----------------------------------------------------------------------
+        # Check if a scheduled job created a new pending job after two
+        # seconds
+        #-----------------------------------------------------------------------
+        job_id = controller.schedule_job('quotesbot', 'toscrape-css',
+                                         'every second')
+        yield twisted_sleep(2)
+        controller.run_scheduler()
+
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        job_s = controller.get_job(job_id)
+        job_p = pending_jobs[0]
+        self.assertEqual(len(pending_jobs), 1)
+        self.assertEqual(job_p.project, job_s.project)
+        self.assertEqual(job_p.spider, job_s.spider)
+        self.assertEqual(job_p.actor, Actor.SCHEDULER)
+        self.assertEqual(job_p.status, Status.PENDING)
 
     #---------------------------------------------------------------------------
     def tearDown(self):
