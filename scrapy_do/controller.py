@@ -15,7 +15,8 @@ from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from distutils.spawn import find_executable
 from collections import namedtuple
 from .schedule import Schedule, Job, Actor, Status
-from .utils import check_scheduling_spec
+from schedule import Scheduler
+from .utils import schedule_job
 
 
 #-------------------------------------------------------------------------------
@@ -36,6 +37,7 @@ class Controller:
         self.metadata_path = os.path.join(self.project_store, 'metadata.pkl')
         self.schedule_path = os.path.join(self.project_store, 'schedule.db')
         self.schedule = Schedule(self.schedule_path)
+        self.scheduler = Scheduler()
 
         if os.path.exists(self.metadata_path):
             with open(self.metadata_path, 'rb') as f:
@@ -125,7 +127,9 @@ class Controller:
             raise KeyError('Unknown spider {}/{}'.format(project, spider))
 
         if when != 'now':
-            check_scheduling_spec(when)
+            job = schedule_job(self.scheduler, when)
+            job.do(lambda: self.schedule_job(project, spider, 'now',
+                                             Actor.SCHEDULER))
 
         status = Status.PENDING if when == 'now' else Status.SCHEDULED
         job = Job(status, actor, when, project, spider)
