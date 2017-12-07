@@ -6,12 +6,13 @@
 #-------------------------------------------------------------------------------
 
 import unittest
+import schedule
 
-from scrapy_do.utils import get_object
+from scrapy_do.utils import get_object, schedule_job
 
 
 #-------------------------------------------------------------------------------
-class utilsTests(unittest.TestCase):
+class UtilsTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def test_get_class(self):
@@ -23,3 +24,23 @@ class utilsTests(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             get_object('scrapy_do.bar')
+
+    #---------------------------------------------------------------------------
+    def test_schedule_job(self):
+        scheduler = schedule.Scheduler()
+
+        invalid_specs = ['', 'foo bar', 'every 2', 'every 2 foobar',
+                         'every 2 to foo days', 'every monday at foo',
+                         'every monday at foo:bar', 'every 2 day']
+        valid_specs = ['every 2 days', 'every 3 to 5 days',
+                       'every monday at 17:51']
+
+        def mock_job():
+            print('foo')
+
+        for spec in invalid_specs:
+            with self.assertRaises(ValueError):
+                schedule_job(scheduler, spec).do(mock_job)
+
+        for spec in valid_specs:
+            schedule_job(scheduler, spec).do(mock_job)
