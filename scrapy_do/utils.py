@@ -7,6 +7,7 @@
 
 import importlib
 
+from twisted.internet import reactor, task
 from datetime import datetime
 from schedule import Job as SchJob
 
@@ -208,3 +209,8 @@ def arg_require_any(dict, args):
         if arg in dict:
             return
     raise KeyError('Neither argument present: "{}"'.format(str(args)))
+
+
+#-------------------------------------------------------------------------------
+def twisted_sleep(time):
+    return task.deferLater(reactor, time, lambda: None)
