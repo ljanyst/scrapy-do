@@ -51,6 +51,11 @@ class Controller:
             with open(self.metadata_path, 'wb') as f:
                 pickle.dump(self.projects, f)
 
+        for job in self.schedule.get_jobs(Status.SCHEDULED):
+            sch_job = schedule_job(self.scheduler, job.schedule)
+            sch_job.do(lambda: self.schedule_job(job.project, job.spider, 'now',
+                                                 Actor.SCHEDULER))
+
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def push_project(self, name, data):
