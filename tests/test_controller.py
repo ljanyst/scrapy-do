@@ -31,9 +31,23 @@ class ControllerTests(unittest.TestCase):
         self.controller = Controller(self.config)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
     def test_setup(self):
-        Controller(self.config)  # no metadata file
-        Controller(self.config)  # metadata file exists
+        #-----------------------------------------------------------------------
+        # Set up the controller
+        #-----------------------------------------------------------------------
+        controller = self.controller
+        yield controller.push_project('quotesbot', self.project_archive_data)
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath',
+                                'every 2 seconds')
+
+        #-----------------------------------------------------------------------
+        # Set up another controller with the same config to see if the state
+        # is reconstructed
+        #-----------------------------------------------------------------------
+        controller = Controller(self.config)
+        self.assertEqual(len(controller.scheduler.jobs), 2)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
