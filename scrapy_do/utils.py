@@ -8,6 +8,7 @@
 import importlib
 
 from datetime import datetime
+from schedule import Job as SchJob
 
 
 #-------------------------------------------------------------------------------
@@ -70,8 +71,128 @@ class TimeStamper:
 
 
 #-------------------------------------------------------------------------------
-def check_scheduling_spec(spec):
-    pass
+def _build_directive_map(job):
+    #---------------------------------------------------------------------------
+    # A list of valid directives
+    #---------------------------------------------------------------------------
+    directive_names = ['second', 'seconds', 'minute', 'minutes', 'hour',
+                       'hours', 'day', 'days', 'week', 'weeks', 'monday',
+                       'tuesday', 'wednesday', 'thursday', 'friday',
+                       'saturday', 'sunday', 'at', 'to']
+
+    #---------------------------------------------------------------------------
+    # Get an appropriate setter reference
+    #---------------------------------------------------------------------------
+    def get_attr(obj, attr):
+        for obj in [obj] + obj.__class__.mro():
+            if attr in obj.__dict__:
+                ret = obj.__dict__[attr]
+                if isinstance(ret, property):
+                    return lambda x: ret.__get__(x, type(x))
+                return ret
+
+    #---------------------------------------------------------------------------
+    # Build the dictionary of setters
+    #---------------------------------------------------------------------------
+    directive_map = {}
+    for d in directive_names:
+        directive_map[d] = get_attr(job, d)
+
+    return directive_map
+
+
+#-------------------------------------------------------------------------------
+def _parse_args(directive, directives):
+    #---------------------------------------------------------------------------
+    # Check the argument to "to"
+    #---------------------------------------------------------------------------
+    if directive == 'to':
+        arg = directives.pop()
+        try:
+            arg = int(arg)
+        except ValueError:
+            raise ValueError('The "to" directive expects an integer')
+        return [arg]
+
+    #---------------------------------------------------------------------------
+    # Check the argument to "at"
+    #---------------------------------------------------------------------------
+    if directive == 'at':
+        arg = directives.pop()
+        arg_split = arg.split(':')
+
+        if len(arg_split) != 2:
+            raise ValueError('The "at" directive expects a string like "12:34"')
+
+        try:
+            int(arg_split[0])
+            int(arg_split[1])
+        except ValueError:
+            raise ValueError('The "at" directive expects a string like "12:34"')
+
+        return [arg]
+
+    #---------------------------------------------------------------------------
+    # Nothing else accepts arguments
+    #---------------------------------------------------------------------------
+    return []
+
+
+#-------------------------------------------------------------------------------
+def _parse_spec(job, spec):
+    #---------------------------------------------------------------------------
+    # Check the directive
+    #---------------------------------------------------------------------------
+    directives = spec.lower().split()
+
+    if len(directives) < 2:
+        raise ValueError('Spec too short')
+
+    if directives[0] != 'every':
+        raise ValueError('Spec must start with "every"')
+
+    #---------------------------------------------------------------------------
+    # Set up the interval if necessary
+    #---------------------------------------------------------------------------
+    try:
+        interval = int(directives[1])
+        job.interval = interval
+
+        if len(directives) < 3:
+            raise ValueError("Spec to short")
+        directives = directives[2:]
+    except ValueError:
+        directives = directives[1:]
+
+    #---------------------------------------------------------------------------
+    # Parse the spec
+    #---------------------------------------------------------------------------
+    directive_map = _build_directive_map(job)
+    directives.reverse()
+    while directives:
+        directive = directives.pop()
+        if directive not in directive_map:
+            raise ValueError('Unknown directive: ' + directive)
+
+        args = _parse_args(directive, directives)
+
+        try:
+            directive_map[directive](job, *args)
+        except AssertionError as e:
+            raise ValueError(str(e))
+
+    return job
+
+
+#-------------------------------------------------------------------------------
+def schedule_job(scheduler, spec):
+    job = SchJob(1, scheduler)
+    try:
+        _parse_spec(job, spec)
+    except Exception:
+        scheduler.cancel_job(job)
+        raise
+    return job
 
 
 #-------------------------------------------------------------------------------
