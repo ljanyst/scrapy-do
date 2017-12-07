@@ -144,3 +144,7 @@ class Controller:
     #---------------------------------------------------------------------------
     def get_job(self, job_id):
         return self.schedule.get_job(job_id)
+
+    #---------------------------------------------------------------------------
+    def run_scheduler(self):
+        self.scheduler.run_pending()
