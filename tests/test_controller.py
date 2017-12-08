@@ -12,7 +12,7 @@ import os
 from twisted.internet.defer import inlineCallbacks
 from scrapy_do.controller import Controller
 from scrapy_do.schedule import Status, Actor
-from scrapy_do.utils import twisted_sleep
+from scrapy_do.utils import twisted_sleep, run_process
 from unittest.mock import Mock, patch, DEFAULT
 from twisted.trial import unittest
 
@@ -215,6 +215,28 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(job_p.spider, job_s.spider)
         self.assertEqual(job_p.actor, Actor.SCHEDULER)
         self.assertEqual(job_p.status, Status.PENDING)
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_run_process(self):
+        temp_dir = tempfile.mkdtemp()
+        out_path = os.path.join(temp_dir, 'foo' + '.out')
+        err_path = os.path.join(temp_dir, 'foo' + '.err')
+        process, exit_status = run_process('cat', ['/etc/group'], 'foo',
+                                           temp_dir)
+        status = yield exit_status
+        self.assertEqual(status, 0)
+        self.assertTrue(os.path.exists(out_path))
+        self.assertFalse(os.path.exists(err_path))
+
+        process, exit_status = run_process('cat', ['/dev/null'], 'foo',
+                                           temp_dir)
+        status = yield exit_status
+        self.assertEqual(status, 0)
+        self.assertFalse(os.path.exists(out_path))
+        self.assertFalse(os.path.exists(err_path))
+
+        shutil.rmtree(temp_dir)
 
     #---------------------------------------------------------------------------
     def tearDown(self):
