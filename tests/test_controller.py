@@ -239,5 +239,36 @@ class ControllerTests(unittest.TestCase):
         shutil.rmtree(temp_dir)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_run_crawler(self):
+        #-----------------------------------------------------------------------
+        # Test the successfull case
+        #-----------------------------------------------------------------------
+        controller = self.controller
+        yield controller.push_project('quotesbot', self.project_archive_data)
+        temp_dir = tempfile.mkdtemp()
+
+        with patch('tempfile.mkdtemp') as mock_mkdtemp:
+            mock_mkdtemp.return_value = temp_dir
+            _, finished = yield controller._run_crawler('quotesbot',
+                                                        'toscrape-css', 'foo')
+
+        status = yield finished
+        self.assertEqual(status, 0)
+        self.assertFalse(os.path.exists(temp_dir))
+        log_file = os.path.join(controller.log_dir, 'foo.err')
+        self.assertTrue(os.path.exists(log_file))
+
+        #-----------------------------------------------------------------------
+        # Test the unzipping failuer
+        #-----------------------------------------------------------------------
+        try:
+            yield controller._run_crawler('foo', 'bar', 'foo')
+            self.fail('Unzipping a non-existent archive should have risen '
+                      'an IOError')
+        except IOError as e:
+            self.assertEquals(str(e), 'Cannot unzip the project archive')
+
+    #---------------------------------------------------------------------------
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
