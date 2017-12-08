@@ -11,6 +11,7 @@ import os
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor, task
+from distutils.spawn import find_executable
 from datetime import datetime
 from schedule import Job as SchJob
 
@@ -248,9 +249,10 @@ class LoggedProcessProtocol(ProcessProtocol):
 
 
 #-------------------------------------------------------------------------------
-def run_process(cmd, args, job_name, log_dir, env=None):
+def run_process(cmd, args, job_name, log_dir, env=None, path=None):
+    cmd = find_executable(cmd)
     args = [cmd] + args
     pp = LoggedProcessProtocol(job_name, log_dir)
-    p = reactor.spawnProcess(pp, cmd, args, env=env,
+    p = reactor.spawnProcess(pp, cmd, args, env=env, path=path,
                              childFDs={1: pp.out_fd, 2: pp.err_fd})
     return p, pp.finished
