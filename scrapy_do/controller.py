@@ -16,7 +16,7 @@ from distutils.spawn import find_executable
 from collections import namedtuple
 from .schedule import Schedule, Job, Actor, Status
 from schedule import Scheduler
-from .utils import schedule_job
+from .utils import schedule_job, run_process
 
 
 #-------------------------------------------------------------------------------
@@ -159,3 +159,37 @@ class Controller:
     #---------------------------------------------------------------------------
     def run_scheduler(self):
         self.scheduler.run_pending()
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def _run_crawler(self, project, spider, job_id):
+        #-----------------------------------------------------------------------
+        # Unzip to a temporary directory
+        #-----------------------------------------------------------------------
+        temp_dir = tempfile.mkdtemp()
+        archive = os.path.join(self.project_store, project + '.zip')
+
+        unzip = find_executable('unzip')
+        ret_code = yield getProcessValue(unzip, args=(archive,), path=temp_dir)
+        if ret_code != 0:
+            shutil.rmtree(temp_dir)
+            raise IOError('Cannot unzip the project archive')
+
+        #-----------------------------------------------------------------------
+        # Run the crawler
+        #-----------------------------------------------------------------------
+        temp_proj_dir = os.path.join(temp_dir, project)
+        env = {'SPIDER_DATA_DIR': self.spider_data_dir}
+        process, finished = run_process('scrapy', ['crawl', spider], job_id,
+                                        self.log_dir, env=env,
+                                        path=temp_proj_dir)
+
+        #-----------------------------------------------------------------------
+        # Clean up
+        #-----------------------------------------------------------------------
+        def clean_up(status):
+            shutil.rmtree(temp_dir)
+            return status
+        finished.addBoth(clean_up)
+
+        returnValue((process, finished))
