@@ -36,20 +36,26 @@ class Controller:
         self.project_store = config.get_string('scrapy-do', 'project-store')
         self.metadata_path = os.path.join(self.project_store, 'metadata.pkl')
         self.schedule_path = os.path.join(self.project_store, 'schedule.db')
-        self.schedule = Schedule(self.schedule_path)
-        self.scheduler = Scheduler()
+        self.log_dir = os.path.join(self.project_store, 'log-dir')
+        self.spider_data_dir = os.path.join(self.project_store, 'spider-data')
+
+        dirs = [self.project_store, self.log_dir, self.spider_data_dir]
+        for d in dirs:
+            try:
+                os.makedirs(d)
+            except FileExistsError:
+                pass
 
         if os.path.exists(self.metadata_path):
             with open(self.metadata_path, 'rb') as f:
                 self.projects = pickle.load(f)
         else:
-            try:
-                os.makedirs(self.project_store)
-            except FileExistsError:
-                pass
             self.projects = {}
             with open(self.metadata_path, 'wb') as f:
                 pickle.dump(self.projects, f)
+
+        self.schedule = Schedule(self.schedule_path)
+        self.scheduler = Scheduler()
 
         for job in self.schedule.get_jobs(Status.SCHEDULED):
             sch_job = schedule_job(self.scheduler, job.schedule)
