@@ -6,7 +6,10 @@
 #-------------------------------------------------------------------------------
 
 import importlib
+import os
 
+from twisted.internet.protocol import ProcessProtocol
+from twisted.internet.defer import Deferred
 from twisted.internet import reactor, task
 from datetime import datetime
 from schedule import Job as SchJob
@@ -214,3 +217,40 @@ def arg_require_any(dict, args):
 #-------------------------------------------------------------------------------
 def twisted_sleep(time):
     return task.deferLater(reactor, time, lambda: None)
+
+
+#-------------------------------------------------------------------------------
+class LoggedProcessProtocol(ProcessProtocol):
+
+    #---------------------------------------------------------------------------
+    def __init__(self, job_name, log_dir):
+        self.finished = Deferred()
+        self.out_path = os.path.join(log_dir, job_name + '.out')
+        self.err_path = os.path.join(log_dir, job_name + '.err')
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        self.out_fd = os.open(self.out_path, flags, 0o644)
+        self.err_fd = os.open(self.err_path, flags, 0o644)
+        os.set_inheritable(self.out_fd, True)
+        os.set_inheritable(self.err_fd, True)
+
+    #---------------------------------------------------------------------------
+    def processExited(self, status):
+        out_size = os.fstat(self.out_fd).st_size
+        err_size = os.fstat(self.err_fd).st_size
+        os.close(self.out_fd)
+        os.close(self.err_fd)
+        if out_size == 0:
+            os.remove(self.out_path)
+        if err_size == 0:
+            os.remove(self.err_path)
+
+        self.finished.callback(status.value.exitCode)
+
+
+#-------------------------------------------------------------------------------
+def run_process(cmd, args, job_name, log_dir, env=None):
+    args = [cmd] + args
+    pp = LoggedProcessProtocol(job_name, log_dir)
+    p = reactor.spawnProcess(pp, cmd, args, env=env,
+                             childFDs={1: pp.out_fd, 2: pp.err_fd})
+    return p, pp.finished
