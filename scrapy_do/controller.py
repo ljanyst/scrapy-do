@@ -6,6 +6,7 @@
 #-------------------------------------------------------------------------------
 
 import tempfile
+import logging
 import pickle
 import shutil
 import os
@@ -13,10 +14,11 @@ import os
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from distutils.spawn import find_executable
+from twisted.python import log
 from collections import namedtuple
 from .schedule import Schedule, Job, Actor, Status
 from schedule import Scheduler
-from .utils import schedule_job, run_process
+from .utils import schedule_job, run_process, twisted_sleep, exc_repr
 
 
 #-------------------------------------------------------------------------------
@@ -32,13 +34,21 @@ class Controller:
 
     #---------------------------------------------------------------------------
     def __init__(self, config):
+        #-----------------------------------------------------------------------
+        # Configuration
+        #-----------------------------------------------------------------------
         self.config = config
         self.project_store = config.get_string('scrapy-do', 'project-store')
+        self.job_slots = config.get_int('scrapy-do', 'job-slots')
         self.metadata_path = os.path.join(self.project_store, 'metadata.pkl')
         self.schedule_path = os.path.join(self.project_store, 'schedule.db')
         self.log_dir = os.path.join(self.project_store, 'log-dir')
         self.spider_data_dir = os.path.join(self.project_store, 'spider-data')
+        self.running_jobs = {}
 
+        #-----------------------------------------------------------------------
+        # Create all the directories
+        #-----------------------------------------------------------------------
         dirs = [self.project_store, self.log_dir, self.spider_data_dir]
         for d in dirs:
             try:
@@ -54,6 +64,9 @@ class Controller:
             with open(self.metadata_path, 'wb') as f:
                 pickle.dump(self.projects, f)
 
+        #-----------------------------------------------------------------------
+        # Set the scheduler up
+        #-----------------------------------------------------------------------
         self.schedule = Schedule(self.schedule_path)
         self.scheduler = Scheduler()
 
@@ -61,6 +74,16 @@ class Controller:
             sch_job = schedule_job(self.scheduler, job.schedule)
             sch_job.do(lambda: self.schedule_job(job.project, job.spider, 'now',
                                                  Actor.SCHEDULER))
+
+        #-----------------------------------------------------------------------
+        # If we have any jobs marked as RUNNING in the schedule at this point,
+        # it means that the daemon was killed while the jobs were running. We
+        # mark these jobs as pending, so that they can be restarted as soon
+        # as possible
+        #-----------------------------------------------------------------------
+        for job in self.schedule.get_jobs(Status.RUNNING):
+            job.status = Status.PENDING
+            self.schedule.commit_job(job)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
@@ -193,3 +216,98 @@ class Controller:
         finished.addBoth(clean_up)
 
         returnValue((process, finished))
+
+    #---------------------------------------------------------------------------
+    def run_crawlers(self):
+        jobs = self.schedule.get_jobs(Status.PENDING)
+        jobs.reverse()
+        while len(self.running_jobs) < self.job_slots and jobs:
+            #-------------------------------------------------------------------
+            # Run the job
+            #-------------------------------------------------------------------
+            job = jobs.pop()
+            job.status = Status.RUNNING
+            self.schedule.commit_job(job)
+            # Use a placeholder until the process is actually started, so that
+            # we do not exceed the quota due to races.
+            self.running_jobs[job.identifier] = None
+
+            d = self._run_crawler(job.project, job.spider, job.identifier)
+
+            #-------------------------------------------------------------------
+            # Error starting the job
+            #-------------------------------------------------------------------
+            def spawn_errback(error, job):
+                job.status = Status.FAILED
+                self.schedule.commit_job(job)
+                log.msg(format="Unable to start job %(id)s: %(reason)s",
+                        reason=exc_repr(error.value), id=job.identifier,
+                        logLevel=logging.ERROR)
+                del self.running_jobs[job.identifier]
+
+            #-------------------------------------------------------------------
+            # Job started successfully
+            #-------------------------------------------------------------------
+            def spawn_callback(value, job):
+                # Put the process object and the finish deferred in the
+                # dictionary
+                self.running_jobs[job.identifier] = value
+                log.msg(format="Job %(id)s started successfully",
+                        id=job.identifier, logLevel=logging.INFO)
+
+                #---------------------------------------------------------------
+                # Finish things up
+                #---------------------------------------------------------------
+                def finished_callback(exit_code):
+                    if exit_code == 0:
+                        job.status = Status.SUCCESSFUL
+                    else:
+                        job.status = Status.FAILED
+
+                    log.msg(format="Job %(id)s exited with code %(exit_code)s",
+                            id=job.identifier, exit_code=exit_code,
+                            logLevel=logging.INFO)
+
+                    self.schedule.commit_job(job)
+                    del self.running_jobs[job.identifier]
+                    return exit_code
+
+                value[1].addCallback(finished_callback)
+
+            d.addCallbacks(spawn_callback, spawn_errback,
+                           callbackArgs=(job,), errbackArgs=(job,))
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def wait_for_starting_jobs(self):
+        num_starting = 1  # whatever to loop at least once
+        while num_starting:
+            num_starting = 0
+            for k, v in self.running_jobs.items():
+                if v is None:
+                    num_starting += 1
+            yield twisted_sleep(0.1)
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def wait_for_running_jobs(self, cancel=False):
+        yield self.wait_for_starting_jobs()
+
+        #-----------------------------------------------------------------------
+        # Send SIGTERM if requested
+        #-----------------------------------------------------------------------
+        if cancel:
+            for job_id in self.running_jobs:
+                process, _ = self.running_jobs[job_id]
+                process.signalProcess('TERM')
+
+        #-----------------------------------------------------------------------
+        # Wait for the jobs to finish
+        #-----------------------------------------------------------------------
+        to_finish = []
+        for job_id in self.running_jobs:
+            _, finished = self.running_jobs[job_id]
+            to_finish.append(finished)
+
+        for d in to_finish:
+            yield d
