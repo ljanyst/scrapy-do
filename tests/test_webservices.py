@@ -9,7 +9,7 @@ import json
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.webservice import Status, PushProject, ListProjects, ListSpiders
-from scrapy_do.webservice import ScheduleJob, ListJobs
+from scrapy_do.webservice import ScheduleJob, ListJobs, CancelJob
 from twisted.web.server import NOT_DONE_YET
 from scrapy_do.schedule import Job, Actor
 from scrapy_do.schedule import Status as JobStatus
@@ -248,3 +248,74 @@ class WebServicesTests(unittest.TestCase):
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0]['identifier'], self.job2.identifier)
         self.assertEqual(jobs[0]['schedule'], self.job2.schedule)
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_cancel_job(self):
+        #-----------------------------------------------------------------------
+        # Set the resource up
+        #-----------------------------------------------------------------------
+        web_app = Mock()
+        web_app.controller = Mock()
+        request = Mock()
+        request.args = {}
+        request.method = 'POST'
+        service = CancelJob(web_app)
+
+        #-----------------------------------------------------------------------
+        # Test a missing param
+        #-----------------------------------------------------------------------
+        d = Deferred()
+        request.finish.side_effect = lambda: d.callback(None)
+
+        ret = service.render(request)
+        yield d
+
+        code = request.setResponseCode.call_args[0][0]
+        headers = request.setHeader.call_args_list
+        data = request.write.call_args[0][0].decode('utf-8')
+        decoded = json.loads(data)
+
+        self.assertEqual(ret, NOT_DONE_YET)
+        self.assertEqual(code, 400)
+        self.assertIn((('Content-Type', 'application/json'),), headers)
+        self.assertIn('status', decoded)
+        self.assertEqual(decoded['status'], 'error')
+
+        #-----------------------------------------------------------------------
+        # Test a controller error
+        #-----------------------------------------------------------------------
+        request.reset_mock()
+        d = Deferred()
+        request.finish.side_effect = lambda: d.callback(None)
+        request.args = {b'id': [b'foo']}
+        web_app.controller.cancel_job.side_effect = KeyError('error')
+
+        service.render(request)
+        yield d
+
+        code = request.setResponseCode.call_args[0][0]
+        data = request.write.call_args[0][0].decode('utf-8')
+        decoded = json.loads(data)
+
+        self.assertEqual(code, 400)
+        self.assertIn('status', decoded)
+        self.assertEqual(decoded['status'], 'error')
+
+        #-----------------------------------------------------------------------
+        # Controller success
+        #-----------------------------------------------------------------------
+        request.reset_mock()
+        web_app.controller.reset_mock()
+        d = Deferred()
+        request.finish.side_effect = lambda: d.callback(None)
+        request.args = {b'id': [b'foo']}
+        web_app.controller.cancel_job.side_effect = None
+
+        service.render(request)
+        yield d
+
+        data = request.write.call_args[0][0].decode('utf-8')
+        decoded = json.loads(data)
+        self.assertIn('status', decoded)
+        self.assertEqual(decoded['status'], 'ok')
