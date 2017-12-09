@@ -187,6 +187,40 @@ class ListJobs(JsonResource):
 
 
 #-------------------------------------------------------------------------------
+class CancelJob(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_POST(self, request):
+        @inlineCallbacks
+        def do_async():
+            try:
+                job_id = request.args[b'id'][0].decode('utf-8')
+            except KeyError as e:
+                result = {
+                    'status': 'error',
+                    'msg': 'Missing argument: ' + str(e)
+                }
+                request.setResponseCode(400)
+                request.write(self.render_json(request, result))
+                request.finish()
+                return
+
+            try:
+                controller = self.parent.controller
+
+                yield controller.cancel_job(job_id)
+                result = {'status': 'ok'}
+            except Exception as e:
+                request.setResponseCode(400)
+                result = {'status': 'error', 'msg': str(e)}
+
+            request.write(self.render_json(request, result))
+            request.finish()
+        do_async()
+        return NOT_DONE_YET
+
+
+#-------------------------------------------------------------------------------
 @implementer(IRealm)
 class PublicHTMLRealm:
 
