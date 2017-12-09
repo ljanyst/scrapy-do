@@ -9,8 +9,7 @@ import logging
 import os
 
 from twisted.application.internet import TCPServer, SSLServer
-from twisted.application.service import MultiService, IServiceMaker, Service
-from twisted.internet.task import LoopingCall
+from twisted.application.service import MultiService, IServiceMaker
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.python import log, usage
 from zope.interface import implementer
@@ -20,23 +19,6 @@ from .webservice import get_web_app
 from .controller import Controller
 from .config import Config
 from .utils import exc_repr
-
-
-#-------------------------------------------------------------------------------
-class LooperService(Service):
-
-    #---------------------------------------------------------------------------
-    def __init__(self, controller):
-        self.setName('Looper')
-        self.scheduler_loop = LoopingCall(controller.run_scheduler)
-
-    #---------------------------------------------------------------------------
-    def startService(self):
-        self.scheduler_loop.start(1.)
-
-    #---------------------------------------------------------------------------
-    def stopService(self):
-        self.scheduler_loop.stop()
 
 
 #-------------------------------------------------------------------------------
@@ -112,8 +94,7 @@ class ScrapyDoServiceMaker():
         #-----------------------------------------------------------------------
         try:
             controller = Controller(config)
-            looper = LooperService(controller)
-            looper.setServiceParent(top_service)
+            controller.setServiceParent(top_service)
         except Exception as e:
             log.msg(format="Unable to set up the controller: %(reason)s",
                     reason=exc_repr(e), logLevel=logging.ERROR)
