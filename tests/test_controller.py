@@ -339,5 +339,89 @@ class ControllerTests(unittest.TestCase):
         yield controller.wait_for_running_jobs(cancel=True)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_cancel(self):
+        #-----------------------------------------------------------------------
+        # Set things up
+        #-----------------------------------------------------------------------
+        controller = self.controller
+        yield controller.push_project('quotesbot', self.project_archive_data)
+        job_id1 = controller.schedule_job('quotesbot', 'toscrape-css',
+                                          'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
+
+        #-----------------------------------------------------------------------
+        # Cancel a scheduled job
+        #-----------------------------------------------------------------------
+        yield controller.cancel_job(job_id1)
+        job = controller.get_job(job_id1)
+        self.assertEqual(job.status, Status.CANCELED)
+
+        #-----------------------------------------------------------------------
+        # Convert the remaining scheduled jobs to pending jobs
+        #-----------------------------------------------------------------------
+        yield twisted_sleep(2)
+        controller.run_scheduler()
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        self.assertEqual(len(pending_jobs), 3)
+        job_ids = [x.identifier for x in pending_jobs]
+        job_id2, job_id3, job_id4 = job_ids
+
+        #-----------------------------------------------------------------------
+        # Cancel a pending job
+        #-----------------------------------------------------------------------
+        yield controller.cancel_job(job_id2)
+        job = controller.get_job(job_id2)
+        self.assertEqual(job.status, Status.CANCELED)
+
+        #-----------------------------------------------------------------------
+        # Run the remaining pending jobs and cancel one of them. Start the
+        # cancellation early to test the case when the job process haven't
+        # had enough time to start.
+        #-----------------------------------------------------------------------
+        controller.run_crawlers()
+        cancel_done = controller.cancel_job(job_id3)
+        yield controller.wait_for_starting_jobs()
+        yield cancel_done
+
+        #-----------------------------------------------------------------------
+        # Temporarily remove a job from a dictionary to simulate a race
+        # condition in which the job finishes while the canceling procedure
+        # sleeps waiting for the process to start
+        #-----------------------------------------------------------------------
+        job_data4 = controller.running_jobs[job_id4]
+        del controller.running_jobs[job_id4]  # this simulates the race
+
+        try:
+            yield controller.cancel_job(job_id4)
+            self.fail('Cancelling a job missing from the dictionary should '
+                      'have risen a KeyError exception but did not')
+        except KeyError as e:
+            pass
+
+        controller.running_jobs[job_id4] = job_data4
+        yield controller.wait_for_running_jobs()
+
+        #-----------------------------------------------------------------------
+        # Cancel an inactive job
+        #-----------------------------------------------------------------------
+        try:
+            yield controller.cancel_job(job_id4)
+            self.fail('Cancelling an incactive job should have risen '
+                      'a KeyError exception but did not')
+        except KeyError as e:
+            pass
+
+        #-----------------------------------------------------------------------
+        # Check the final statuses
+        #-----------------------------------------------------------------------
+        self.assertEqual(controller.get_job(job_id1).status, Status.CANCELED)
+        self.assertEqual(controller.get_job(job_id2).status, Status.CANCELED)
+        self.assertEqual(controller.get_job(job_id3).status, Status.CANCELED)
+        self.assertEqual(controller.get_job(job_id4).status, Status.SUCCESSFUL)
+
+    #---------------------------------------------------------------------------
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
