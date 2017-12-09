@@ -47,6 +47,7 @@ class Controller(Service):
         self.log_dir = os.path.join(self.project_store, 'log-dir')
         self.spider_data_dir = os.path.join(self.project_store, 'spider-data')
         self.running_jobs = {}
+        self.scheduled_jobs = {}
 
         #-----------------------------------------------------------------------
         # Create all the directories
@@ -76,6 +77,7 @@ class Controller(Service):
             sch_job = schedule_job(self.scheduler, job.schedule)
             sch_job.do(lambda: self.schedule_job(job.project, job.spider, 'now',
                                                  Actor.SCHEDULER))
+            self.scheduled_jobs[job.identifier] = sch_job
 
         #-----------------------------------------------------------------------
         # If we have any jobs marked as RUNNING in the schedule at this point,
@@ -180,15 +182,16 @@ class Controller(Service):
         if spider not in self.projects[project].spiders:
             raise KeyError('Unknown spider {}/{}'.format(project, spider))
 
+        job = Job(Status.PENDING, actor, 'now', project, spider)
         if when != 'now':
-            job = schedule_job(self.scheduler, when)
-            job.do(lambda: self.schedule_job(project, spider, 'now',
-                                             Actor.SCHEDULER))
+            sch_job = schedule_job(self.scheduler, when)
+            sch_job.do(lambda: self.schedule_job(project, spider, 'now',
+                                                 Actor.SCHEDULER))
+            self.scheduled_jobs[job.identifier] = sch_job
+            job.status = Status.SCHEDULED
+            job.schedule = when
 
-        status = Status.PENDING if when == 'now' else Status.SCHEDULED
-        job = Job(status, actor, when, project, spider)
         self.schedule.add_job(job)
-
         return job.identifier
 
     #---------------------------------------------------------------------------
@@ -331,3 +334,47 @@ class Controller(Service):
 
         for d in to_finish:
             yield d
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def cancel_job(self, job_id):
+        job = self.schedule.get_job(job_id)
+
+        #-----------------------------------------------------------------------
+        # Scheduled
+        #-----------------------------------------------------------------------
+        if job.status == Status.SCHEDULED:
+            job.status = Status.CANCELED
+            self.schedule.commit_job(job)
+            self.scheduler.cancel_job(self.scheduled_jobs[job_id])
+            del self.scheduled_jobs[job_id]
+
+        #-----------------------------------------------------------------------
+        # Pending
+        #-----------------------------------------------------------------------
+        elif job.status == Status.PENDING:
+            job.status = Status.CANCELED
+            self.schedule.commit_job(job)
+
+        #-----------------------------------------------------------------------
+        # Running
+        #-----------------------------------------------------------------------
+        elif job.status == Status.RUNNING:
+            while True:
+                if job_id not in self.running_jobs:
+                    raise KeyError('Job {} is not active'.format(job_id))
+                if self.running_jobs[job_id] is None:
+                    yield twisted_sleep(0.1)  # wait until the job starts
+                else:
+                    break
+            process, finished = self.running_jobs[job_id]
+            process.signalProcess('TERM')
+            yield finished
+            job.status = Status.CANCELED
+            self.schedule.commit_job(job)
+
+        #-----------------------------------------------------------------------
+        # Not active
+        #-----------------------------------------------------------------------
+        else:
+            raise KeyError('Job {} is not active'.format(job_id))
