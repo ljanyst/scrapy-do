@@ -86,9 +86,7 @@ class Schedule:
     def __init__(self, database=None, table='schedule'):
         self.database = database or ':memory:'
         self.table = table
-        # http://twistedmatrix.com/trac/ticket/4040
         self.db = sqlite3.connect(self.database,
-                                  check_same_thread=False,
                                   detect_types=sqlite3.PARSE_DECLTYPES)
 
         query = "CREATE TABLE IF NOT EXISTS {table} (" \
