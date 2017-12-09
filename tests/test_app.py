@@ -48,7 +48,8 @@ def build_mock_config(data):
 #-------------------------------------------------------------------------------
 default_config = {
     'scrapy-do': {
-        'project-store': 'projects'
+        'project-store': 'projects',
+        'job-slots': 2
     },
     'web': {
         'interface': '127.0.0.1',
