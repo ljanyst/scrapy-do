@@ -11,7 +11,7 @@ import os
 
 from twisted.internet.defer import inlineCallbacks
 from scrapy_do.controller import Controller
-from scrapy_do.schedule import Status, Actor
+from scrapy_do.schedule import Status, Actor, Job
 from scrapy_do.utils import twisted_sleep, run_process
 from unittest.mock import Mock, patch, DEFAULT
 from twisted.trial import unittest
@@ -28,13 +28,16 @@ class ControllerTests(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.config = Mock()
         self.config.get_string.return_value = self.temp_dir
+        self.config.get_int.return_value = 2
         self.controller = Controller(self.config)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def test_setup(self):
         #-----------------------------------------------------------------------
-        # Set up the controller
+        # Set up the controller. Artificially add some RUNNING jobs to the
+        # schedule to simulate the daemon being killed unexpectedly. These
+        # jobs should be converted to PENDING to be restarted ASAP.
         #-----------------------------------------------------------------------
         controller = self.controller
         yield controller.push_project('quotesbot', self.project_archive_data)
@@ -42,12 +45,19 @@ class ControllerTests(unittest.TestCase):
         controller.schedule_job('quotesbot', 'toscrape-xpath',
                                 'every 2 seconds')
 
+        job = Job(Status.RUNNING, Actor.SCHEDULER, 'now', 'foo1', 'bar1')
+        self.controller.schedule.add_job(job)
+        job = Job(Status.RUNNING, Actor.SCHEDULER, 'now', 'foo2', 'bar2')
+        self.controller.schedule.add_job(job)
+        self.assertEqual(len(controller.get_jobs(Status.RUNNING)), 2)
+
         #-----------------------------------------------------------------------
         # Set up another controller with the same config to see if the state
         # is reconstructed
         #-----------------------------------------------------------------------
         controller = Controller(self.config)
         self.assertEqual(len(controller.scheduler.jobs), 2)
+        self.assertEqual(len(controller.get_jobs(Status.PENDING)), 2)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
@@ -268,6 +278,65 @@ class ControllerTests(unittest.TestCase):
                       'an IOError')
         except IOError as e:
             self.assertEquals(str(e), 'Cannot unzip the project archive')
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_run_crawlers(self):
+        #-----------------------------------------------------------------------
+        # Set the projects up, schedule some jobs, and run the scheduler
+        #-----------------------------------------------------------------------
+        controller = self.controller
+        yield controller.push_project('quotesbot', self.project_archive_data)
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
+
+        yield twisted_sleep(2)
+        controller.run_scheduler()
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        self.assertEqual(len(pending_jobs), 4)
+
+        #-----------------------------------------------------------------------
+        # Run the crawlers
+        #-----------------------------------------------------------------------
+        controller.run_crawlers()
+
+        running_jobs = controller.get_jobs(Status.RUNNING)
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        self.assertEqual(len(running_jobs), 2)
+        self.assertEqual(len(pending_jobs), 2)
+
+        yield controller.wait_for_running_jobs()
+        controller.run_crawlers()
+        yield controller.wait_for_running_jobs()
+
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        successful_jobs = controller.get_jobs(Status.SUCCESSFUL)
+        self.assertEqual(len(successful_jobs), 4)
+        self.assertEqual(len(pending_jobs), 0)
+
+        for job in successful_jobs:
+            log_file = os.path.join(self.temp_dir, 'log-dir',
+                                    successful_jobs[0].identifier + '.err')
+            self.assertTrue(os.path.exists(log_file))
+
+        #-----------------------------------------------------------------------
+        # Test failure to spawn a job
+        #-----------------------------------------------------------------------
+        job = Job(Status.PENDING, Actor.SCHEDULER, 'now', 'foo', 'bar')
+        self.controller.schedule.add_job(job)
+        controller.run_crawlers()
+        yield controller.wait_for_starting_jobs()
+        job = controller.get_job(job.identifier)
+        self.assertEqual(job.status, Status.FAILED)
+
+        #-----------------------------------------------------------------------
+        # Spawn a job but then kill it
+        #-----------------------------------------------------------------------
+        controller.schedule_job('quotesbot', 'toscrape-css', 'now')
+        controller.run_crawlers()
+        yield controller.wait_for_running_jobs(cancel=True)
 
     #---------------------------------------------------------------------------
     def tearDown(self):
