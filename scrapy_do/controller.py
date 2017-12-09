@@ -11,8 +11,10 @@ import pickle
 import shutil
 import os
 
+from twisted.application.service import Service
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
+from twisted.internet.task import LoopingCall
 from distutils.spawn import find_executable
 from twisted.python import log
 from collections import namedtuple
@@ -26,7 +28,7 @@ Project = namedtuple('Project', ['name', 'archive', 'spiders'])
 
 
 #-------------------------------------------------------------------------------
-class Controller:
+class Controller(Service):
     """
     An object of this class is responsible for glueing together all the other
     components.
@@ -84,6 +86,24 @@ class Controller:
         for job in self.schedule.get_jobs(Status.RUNNING):
             job.status = Status.PENDING
             self.schedule.commit_job(job)
+
+        #-----------------------------------------------------------------------
+        # Set up the service
+        #-----------------------------------------------------------------------
+        self.setName('Controller')
+        self.scheduler_loop = LoopingCall(self.run_scheduler)
+        self.crawlers_loop = LoopingCall(self.run_crawlers)
+
+    #---------------------------------------------------------------------------
+    def startService(self):
+        self.scheduler_loop.start(1.)
+        self.crawlers_loop.start(1.)
+
+    #---------------------------------------------------------------------------
+    def stopService(self):
+        self.scheduler_loop.stop()
+        self.crawlers_loop.stop()
+        return self.wait_for_running_jobs(cancel=True)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
