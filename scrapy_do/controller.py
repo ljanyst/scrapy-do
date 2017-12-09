@@ -40,7 +40,9 @@ class Controller(Service):
         # Configuration
         #-----------------------------------------------------------------------
         self.config = config
-        self.project_store = config.get_string('scrapy-do', 'project-store')
+        ps = config.get_string('scrapy-do', 'project-store')
+        ps_abs = os.path.join(os.getcwd(), ps)
+        self.project_store = ps if ps.startswith('/') else ps_abs
         self.job_slots = config.get_int('scrapy-do', 'job-slots')
         self.metadata_path = os.path.join(self.project_store, 'metadata.pkl')
         self.schedule_path = os.path.join(self.project_store, 'schedule.db')
