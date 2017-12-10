@@ -208,6 +208,14 @@ class Controller(Service):
         return self.schedule.get_jobs(job_status)
 
     #---------------------------------------------------------------------------
+    def get_active_jobs(self):
+        return self.schedule.get_active_jobs()
+
+    #---------------------------------------------------------------------------
+    def get_completed_jobs(self):
+        return self.schedule.get_completed_jobs()
+
+    #---------------------------------------------------------------------------
     def get_job(self, job_id):
         return self.schedule.get_job(job_id)
 
