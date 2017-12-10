@@ -256,3 +256,18 @@ def run_process(cmd, args, job_name, log_dir, env=None, path=None):
     p = reactor.spawnProcess(pp, cmd, args, env=env, path=path,
                              childFDs={1: pp.out_fd, 2: pp.err_fd})
     return p, pp.finished
+
+
+#-------------------------------------------------------------------------------
+def pprint_relativedelta(delta):
+    ret = ''
+    if delta.years:
+        ret += '{}y '.format(delta.years)
+    if delta.days:
+        ret += '{}d '.format(delta.days)
+    if delta.hours:
+        ret += '{}h '.format(delta.hours)
+    if delta.minutes:
+        ret += '{}m '.format(delta.minutes)
+    ret += '{}s'.format(delta.seconds)
+    return ret
