@@ -46,6 +46,7 @@ class Controller(Service):
         ps_abs = os.path.join(os.getcwd(), ps)
         self.project_store = ps if ps.startswith('/') else ps_abs
         self.job_slots = config.get_int('scrapy-do', 'job-slots')
+        self.completed_cap = config.get_int('scrapy-do', 'completed-cap')
         self.metadata_path = os.path.join(self.project_store, 'metadata.pkl')
         self.schedule_path = os.path.join(self.project_store, 'schedule.db')
         self.log_dir = os.path.join(self.project_store, 'log-dir')
@@ -104,16 +105,19 @@ class Controller(Service):
         self.setName('Controller')
         self.scheduler_loop = LoopingCall(self.run_scheduler)
         self.crawlers_loop = LoopingCall(self.run_crawlers)
+        self.purger_loop = LoopingCall(self.purge_completed_jobs)
 
     #---------------------------------------------------------------------------
     def startService(self):
         self.scheduler_loop.start(1.)
         self.crawlers_loop.start(1.)
+        self.purger_loop.start(10.)
 
     #---------------------------------------------------------------------------
     def stopService(self):
         self.scheduler_loop.stop()
         self.crawlers_loop.stop()
+        self.purger_loop.stop()
         return self.wait_for_running_jobs(cancel=True)
 
     #---------------------------------------------------------------------------
@@ -405,3 +409,13 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         else:
             raise KeyError('Job {} is not active'.format(job_id))
+
+    #---------------------------------------------------------------------------
+    def purge_completed_jobs(self):
+        completed_jobs = self.get_completed_jobs()
+        for job in completed_jobs[self.completed_cap:]:
+            self.schedule.remove_job(job.identifier)
+            for log_type in ['.out', '.err']:
+                log_file = os.path.join(self.log_dir, job.identifier + log_type)
+                if os.path.exists(log_file):
+                    os.remove(log_file)
