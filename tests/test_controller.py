@@ -338,6 +338,12 @@ class ControllerTests(unittest.TestCase):
         controller.run_crawlers()
         yield controller.wait_for_running_jobs(cancel=True)
 
+        #-----------------------------------------------------------------------
+        # Check the overall number of completed and active jobs
+        #-----------------------------------------------------------------------
+        self.assertEqual(len(controller.get_active_jobs()), 4)
+        self.assertEqual(len(controller.get_completed_jobs()), 4)
+
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def test_cancel(self):
