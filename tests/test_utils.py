@@ -53,4 +53,4 @@ class UtilsTests(unittest.TestCase):
         future = now + relativedelta(years=+1, months=+2, days=+3, hours=+4,
                                      minutes=+5, seconds=+6)
         diff = pprint_relativedelta(relativedelta(future, now))
-        self.assertEqual(diff, '1y 3d 4h 5m 6s')
+        self.assertEqual(diff, '1y 2m 3d 4h 5m 6s')
