@@ -26,6 +26,7 @@ from .utils import schedule_job, run_process, twisted_sleep, exc_repr
 
 #-------------------------------------------------------------------------------
 Project = namedtuple('Project', ['name', 'archive', 'spiders'])
+RunningJob = namedtuple('RunningJob', ['process', 'finished_d', 'time_started'])
 
 
 #-------------------------------------------------------------------------------
@@ -284,7 +285,8 @@ class Controller(Service):
             def spawn_callback(value, job):
                 # Put the process object and the finish deferred in the
                 # dictionary
-                self.running_jobs[job.identifier] = value
+                running_job = RunningJob(value[0], value[1], datetime.now())
+                self.running_jobs[job.identifier] = running_job
                 log.msg(format="Job %(id)s started successfully",
                         id=job.identifier, logLevel=logging.INFO)
 
@@ -299,6 +301,8 @@ class Controller(Service):
                         self.counter_failure += 1
                         job.status = Status.FAILED
 
+                    rj = self.running_jobs[job.identifier]
+                    job.duration = (datetime.now() - rj.time_started).seconds
                     log.msg(format="Job %(id)s exited with code %(exit_code)s",
                             id=job.identifier, exit_code=exit_code,
                             logLevel=logging.INFO)
@@ -333,16 +337,16 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         if cancel:
             for job_id in self.running_jobs:
-                process, _ = self.running_jobs[job_id]
-                process.signalProcess('TERM')
+                rj = self.running_jobs[job_id]
+                rj.process.signalProcess('TERM')
 
         #-----------------------------------------------------------------------
         # Wait for the jobs to finish
         #-----------------------------------------------------------------------
         to_finish = []
         for job_id in self.running_jobs:
-            _, finished = self.running_jobs[job_id]
-            to_finish.append(finished)
+            rj = self.running_jobs[job_id]
+            to_finish.append(rj.finished_d)
 
         for d in to_finish:
             yield d
@@ -379,12 +383,13 @@ class Controller(Service):
                     yield twisted_sleep(0.1)  # wait until the job starts
                 else:
                     break
-            process, finished = self.running_jobs[job_id]
-            process.signalProcess('TERM')
-            yield finished
+            rj = self.running_jobs[job_id]
+            rj.process.signalProcess('TERM')
+            yield rj.finished_d
             self.counter_failure -= 1
             self.counter_cancel += 1
             job.status = Status.CANCELED
+            job.duration = (datetime.now() - rj.time_started).seconds
             self.schedule.commit_job(job)
 
         #-----------------------------------------------------------------------
