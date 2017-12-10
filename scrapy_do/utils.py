@@ -5,6 +5,10 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+"""
+A collection of utility classes and functions used throughout the project.
+"""
+
 import importlib
 import os
 
@@ -29,7 +33,7 @@ def exc_repr(e):
 def get_object(name):
     """
     Retrieve an object from a module given its fully qualified name. For
-    example: `get_object('scrapy_do.webservice.Status')`
+    example: `get_object('scrapy_do.webservice.Status')`.
     """
     name = name.split('.')
     object_name = name[-1]
@@ -191,6 +195,19 @@ def _parse_spec(job, spec):
 
 #-------------------------------------------------------------------------------
 def schedule_job(scheduler, spec):
+    """
+    Take a `schedule.Scheduler` object and an interval spec and convert it
+    to a `schedule.Job` registered with the scheduler. The spec can be
+    any string that can be translated to `schedule calls
+    <https://schedule.readthedocs.io/en/stable/>`_. For example: string
+    'every 2 to 3 minutes' corresponds to `schedule.every(2).to(3).minutes`.
+
+    :param scheduler:   A `schedule.Scheduler`
+    :param spec:        String containing the interval spec
+    :return:            A `schedule.Job` registered with the scheduler
+    :raises ValueError: If the spec is not a valid sequence of `schedule`
+                        method calls
+    """
     job = SchJob(1, scheduler)
     try:
         _parse_spec(job, spec)
@@ -202,6 +219,11 @@ def schedule_job(scheduler, spec):
 
 #-------------------------------------------------------------------------------
 def arg_require_all(dict, args):
+    """
+    Check if all of the args are present in the dict.
+
+    :raises KeyError: If any argument is missing from the dict.
+    """
     for arg in args:
         if arg not in dict:
             raise KeyError('Missing argument "{}"'.format(arg))
@@ -209,6 +231,11 @@ def arg_require_all(dict, args):
 
 #-------------------------------------------------------------------------------
 def arg_require_any(dict, args):
+    """
+    Check if any of the args is in the dict.
+
+    :raises KeyError: If none of the args is present in the dict.
+    """
     for arg in args:
         if arg in dict:
             return
@@ -217,11 +244,26 @@ def arg_require_any(dict, args):
 
 #-------------------------------------------------------------------------------
 def twisted_sleep(time):
+    """
+    Return a deferred that will be triggered after the specified amount of
+    time passes
+    """
     return task.deferLater(reactor, time, lambda: None)
 
 
 #-------------------------------------------------------------------------------
 class LoggedProcessProtocol(ProcessProtocol):
+    """
+    An implementation of ProcessProtocol that forwards the program output
+    to logfiles. It creates files `job_name.out` and `job_name.err` and
+    redirects the standard output and standard error output of the
+    process to the respective file. If a log file is empty upon program
+    exit it is deleted. The :data:`finished <LoggedProcessProtocol.finished>`
+    deferred is triggered upon process exit and called with it's exit code.
+
+    :param job_name: Name of the job
+    :param log_dir:  A directory to put the log files in
+    """
 
     #---------------------------------------------------------------------------
     def __init__(self, job_name, log_dir):
@@ -236,6 +278,9 @@ class LoggedProcessProtocol(ProcessProtocol):
 
     #---------------------------------------------------------------------------
     def processExited(self, status):
+        """
+        Callback called by `twisted` upon process exit.
+        """
         out_size = os.fstat(self.out_fd).st_size
         err_size = os.fstat(self.err_fd).st_size
         os.close(self.out_fd)
@@ -250,6 +295,22 @@ class LoggedProcessProtocol(ProcessProtocol):
 
 #-------------------------------------------------------------------------------
 def run_process(cmd, args, job_name, log_dir, env=None, path=None):
+    """
+    Run a process using :class:`LoggedProcessProtocol <LoggedProcessProtocol>`
+
+    :param cmd:      Command to run
+    :param args:     Argument passed to the command
+    :param job_name: Name of the job that will be used for the name of the
+                     log files
+    :param log_dir:  Directory where the log files will be stored
+    :param env:      A dictionary with environment variables and their values
+    :param path:     Program's working directory
+
+    :return:         A tuple of an `IProcessTransport` object as returned
+                     by twisted's `reactor.spawnProcess` and a deferred
+                     called on program exit with the return code of the
+                     process.
+    """
     cmd = find_executable(cmd)
     args = [cmd] + args
     pp = LoggedProcessProtocol(job_name, log_dir)
@@ -260,6 +321,11 @@ def run_process(cmd, args, job_name, log_dir, env=None, path=None):
 
 #-------------------------------------------------------------------------------
 def pprint_relativedelta(delta):
+    """
+    Return a string representation of a relativedelta object in the form
+    similar to: "1y 2m 3d 5h 6m". If any of the components is equal to zero,
+    it's omitted.
+    """
     ret = ''
     if delta.years:
         ret += '{}y '.format(delta.years)
