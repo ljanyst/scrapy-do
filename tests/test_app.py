@@ -61,7 +61,8 @@ default_config = {
         'key': 'scrapy-do.key'
     },
     'web-modules': {
-        'status.json': 'scrapy_do.webservice.Status'
+        'status.json': 'scrapy_do.webservice.Status',
+        'get-log': 'scrapy_do.webservice.GetLog'
     }
 }
 
@@ -125,6 +126,7 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         config = build_mock_config(self.config)
         controller = Mock()
+        controller.log_dir = self.pstore_path
         self.service_maker._configure_web_server(config, controller)
 
         #-----------------------------------------------------------------------
