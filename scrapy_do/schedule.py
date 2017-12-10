@@ -53,6 +53,13 @@ class Job:
         self._duration = duration
 
     #---------------------------------------------------------------------------
+    def __str__(self):
+        s = 'Job[id="{}", actor="{}", schedule="{}", project="{}", spider="{}"]'
+        s = s.format(self.identifier, self.actor.name, self.schedule,
+                     self.project, self.spider)
+        return s
+
+    #---------------------------------------------------------------------------
     def to_dict(self):
         d = {
             'identifier': self.identifier,
