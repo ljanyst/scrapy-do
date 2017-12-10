@@ -23,11 +23,26 @@ class ScheduleTests(unittest.TestCase):
                         schedule='every 2 to 3 hours', project='testproj2',
                         spider='testspider2')
         self.job3 = Job(status=Status.PENDING, actor=Actor.SCHEDULER,
-                        project='testproj2', spider='testspider2')
+                        project='testproj3', spider='testspider3')
+        self.job4 = Job(status=Status.RUNNING, actor=Actor.SCHEDULER,
+                        project='testproj4', spider='testspider4')
+        self.job5 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
+                        project='testproj5', spider='testspider5')
+        self.job6 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
+                        project='testproj6', spider='testspider6')
+        self.job7 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
+                        project='testproj7', spider='testspider7')
+        self.job8 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
+                        project='testproj8', spider='testspider8')
 
         self.schedule.add_job(self.job1)
         self.schedule.add_job(self.job2)
         self.schedule.add_job(self.job3)
+        self.schedule.add_job(self.job4)
+        self.schedule.add_job(self.job5)
+        self.schedule.add_job(self.job6)
+        self.schedule.add_job(self.job7)
+        self.schedule.add_job(self.job8)
 
     #---------------------------------------------------------------------------
     def compare_jobs(self, job1, job2):
@@ -54,6 +69,16 @@ class ScheduleTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.schedule.get_job(identifier=scheduled_jobs[0].identifier + 'a')
 
+        active_jobs = self.schedule.get_active_jobs()
+        completed_jobs = self.schedule.get_completed_jobs()
+
+        for job in active_jobs:
+            self.assertIn(job.status,
+                          [Status.SCHEDULED, Status.PENDING, Status.RUNNING])
+        for job in completed_jobs:
+            self.assertIn(job.status,
+                          [Status.CANCELED, Status.SUCCESSFUL, Status.FAILED])
+
     #---------------------------------------------------------------------------
     def test_change(self):
         pending_jobs = self.schedule.get_jobs(Status.PENDING)
@@ -63,7 +88,7 @@ class ScheduleTests(unittest.TestCase):
         self.schedule.commit_job(job)
         running_jobs = self.schedule.get_jobs(Status.RUNNING)
         pending_jobs = self.schedule.get_jobs(Status.PENDING)
-        self.assertEqual(len(running_jobs), 1)
+        self.assertEqual(len(running_jobs), 2)
         self.assertEqual(len(pending_jobs), 0)
         self.compare_jobs(job, running_jobs[0])
 
