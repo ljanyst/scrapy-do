@@ -15,6 +15,7 @@ from scrapy_do.schedule import Job, Actor
 from scrapy_do.schedule import Status as JobStatus
 from unittest.mock import Mock
 from twisted.trial import unittest
+from datetime import datetime
 
 
 #-------------------------------------------------------------------------------
@@ -47,6 +48,11 @@ class WebServicesTests(unittest.TestCase):
                         project='quotesbot', spider='toscrape-css')
         self.web_app.controller.get_job.return_value = self.job1
         self.web_app.controller.get_jobs.return_value = [self.job2]
+        self.web_app.controller.start_time = datetime.now()
+        self.web_app.controller.counter_run = 0
+        self.web_app.controller.counter_success = 0
+        self.web_app.controller.counter_failure = 0
+        self.web_app.controller.counter_cancel = 0
 
     #---------------------------------------------------------------------------
     def test_status(self):
