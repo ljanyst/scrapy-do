@@ -87,3 +87,9 @@ class ScheduleTests(unittest.TestCase):
         self.assertIsInstance(job_data['timestamp'], str)
         self.assertIsInstance(job_data['status'], str)
         self.assertIsInstance(job_data['actor'], str)
+
+    #---------------------------------------------------------------------------
+    def test_metadata(self):
+        self.assertEqual(int(self.schedule.get_metadata('version')), 1)
+        with self.assertRaises(KeyError):
+            self.schedule.get_metadata('foo')
