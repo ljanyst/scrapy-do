@@ -429,5 +429,30 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(controller.get_job(job_id4).status, Status.SUCCESSFUL)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_purge_completed(self):
+        controller = self.controller
+        yield controller.push_project('quotesbot', self.project_archive_data)
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
+
+        yield twisted_sleep(2)
+        controller.run_scheduler()
+
+        for _ in range(2):
+            controller.run_crawlers()
+            yield controller.wait_for_running_jobs()
+
+        completed_jobs = controller.get_completed_jobs()
+        self.assertEqual(len(completed_jobs), 4)
+        controller.purge_completed_jobs()
+        self.assertEqual(len(controller.get_completed_jobs()), 2)
+        for job in completed_jobs[2:]:
+            log_file = os.path.join(controller.log_dir, job.identifier + '.err')
+            self.assertFalse(os.path.exists(log_file))
+
+    #---------------------------------------------------------------------------
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
