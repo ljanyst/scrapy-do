@@ -191,8 +191,14 @@ class ListJobs(JsonResource):
     def render_GET(self, request):
         arg_require_any(request.args, [b'status', b'id'])
         if b'status' in request.args:
-            status = JobStatus[request.args[b'status'][0].decode('utf-8')]
-            jobs = self.parent.controller.get_jobs(status)
+            status = request.args[b'status'][0].decode('utf-8')
+            if status == 'ACTIVE':
+                jobs = self.parent.controller.get_active_jobs()
+            elif status == 'COMPLETED':
+                jobs = self.parent.controller.get_completed_jobs()
+            else:
+                status = JobStatus[status]
+                jobs = self.parent.controller.get_jobs(status)
         else:
             identifier = request.args[b'id'][0].decode('utf-8')
             jobs = [self.parent.controller.get_job(identifier)]
