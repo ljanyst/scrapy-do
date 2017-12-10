@@ -50,6 +50,10 @@ class Controller(Service):
         self.spider_data_dir = os.path.join(self.project_store, 'spider-data')
         self.running_jobs = {}
         self.scheduled_jobs = {}
+        self.run_counter = 0
+        self.success_counter = 0
+        self.failure_counter = 0
+        self.cancel_counter = 0
 
         #-----------------------------------------------------------------------
         # Create all the directories
@@ -247,6 +251,7 @@ class Controller(Service):
         jobs = self.schedule.get_jobs(Status.PENDING)
         jobs.reverse()
         while len(self.running_jobs) < self.job_slots and jobs:
+            self.run_counter += 1
             #-------------------------------------------------------------------
             # Run the job
             #-------------------------------------------------------------------
@@ -263,6 +268,7 @@ class Controller(Service):
             # Error starting the job
             #-------------------------------------------------------------------
             def spawn_errback(error, job):
+                self.failure_counter += 1
                 job.status = Status.FAILED
                 self.schedule.commit_job(job)
                 log.msg(format="Unable to start job %(id)s: %(reason)s",
@@ -285,8 +291,10 @@ class Controller(Service):
                 #---------------------------------------------------------------
                 def finished_callback(exit_code):
                     if exit_code == 0:
+                        self.success_counter += 1
                         job.status = Status.SUCCESSFUL
                     else:
+                        self.failure_counter += 1
                         job.status = Status.FAILED
 
                     log.msg(format="Job %(id)s exited with code %(exit_code)s",
@@ -372,6 +380,8 @@ class Controller(Service):
             process, finished = self.running_jobs[job_id]
             process.signalProcess('TERM')
             yield finished
+            self.failure_counter -= 1
+            self.cancel_counter += 1
             job.status = Status.CANCELED
             self.schedule.commit_job(job)
 
