@@ -6,7 +6,6 @@
 #-------------------------------------------------------------------------------
 
 import tempfile
-import logging
 import pickle
 import shutil
 import os
@@ -16,7 +15,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from twisted.internet.task import LoopingCall
 from distutils.spawn import find_executable
-from twisted.python import log
+from twisted.logger import Logger
 from collections import namedtuple
 from .schedule import Schedule, Job, Actor, Status
 from schedule import Scheduler
@@ -36,11 +35,14 @@ class Controller(Service):
     components.
     """
 
+    log = Logger()
+
     #---------------------------------------------------------------------------
     def __init__(self, config):
         #-----------------------------------------------------------------------
         # Configuration
         #-----------------------------------------------------------------------
+        self.log.info('Creating controller')
         self.config = config
         ps = config.get_string('scrapy-do', 'project-store')
         ps_abs = os.path.join(os.getcwd(), ps)
@@ -84,6 +86,7 @@ class Controller(Service):
         self.scheduler = Scheduler()
 
         for job in self.schedule.get_jobs(Status.SCHEDULED):
+            self.log.info('Re-scheduling: {}'.format(str(job)))
             sch_job = schedule_job(self.scheduler, job.schedule)
             sch_job.do(lambda: self.schedule_job(job.project, job.spider, 'now',
                                                  Actor.SCHEDULER))
@@ -96,6 +99,7 @@ class Controller(Service):
         # as possible
         #-----------------------------------------------------------------------
         for job in self.schedule.get_jobs(Status.RUNNING):
+            self.log.info('Restarting interrupted: {}'.format(str(job)))
             job.status = Status.PENDING
             self.schedule.commit_job(job)
 
@@ -109,12 +113,14 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def startService(self):
+        self.log.info('Starting controller')
         self.scheduler_loop.start(1.)
         self.crawlers_loop.start(1.)
         self.purger_loop.start(10.)
 
     #---------------------------------------------------------------------------
     def stopService(self):
+        self.log.info('Stopping controller')
         self.scheduler_loop.stop()
         self.crawlers_loop.stop()
         self.purger_loop.stop()
@@ -123,6 +129,8 @@ class Controller(Service):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def push_project(self, name, data):
+        self.log.info('Pushing project "{}"'.format(name))
+
         #-----------------------------------------------------------------------
         # Store the data in a temoporary file
         #-----------------------------------------------------------------------
@@ -140,6 +148,7 @@ class Controller(Service):
         if ret_code != 0:
             shutil.rmtree(temp_dir)
             os.remove(tmp[1])
+            self.log.debug('Failed to unzip data using "{}"'.format(unzip))
             raise ValueError('Not a valid zip archive')
 
         #-----------------------------------------------------------------------
@@ -175,6 +184,8 @@ class Controller(Service):
         with open(self.metadata_path, 'wb') as f:
             pickle.dump(self.projects, f)
 
+        self.log.info('Added project "{}" with spiders {}'.format(
+            name, prj.spiders))
         returnValue(prj.spiders)
 
     #---------------------------------------------------------------------------
@@ -204,6 +215,7 @@ class Controller(Service):
             job.status = Status.SCHEDULED
             job.schedule = when
 
+        self.log.info('Scheduling: {}'.format(str(job)))
         self.schedule.add_job(job)
         return job.identifier
 
@@ -240,6 +252,8 @@ class Controller(Service):
         ret_code = yield getProcessValue(unzip, args=(archive,), path=temp_dir)
         if ret_code != 0:
             shutil.rmtree(temp_dir)
+            msg = 'Unable to unzip with {}. Archive corrupted?'.format(unzip)
+            self.log.error(msg)
             raise IOError('Cannot unzip the project archive')
 
         #-----------------------------------------------------------------------
@@ -286,9 +300,8 @@ class Controller(Service):
                 self.counter_failure += 1
                 job.status = Status.FAILED
                 self.schedule.commit_job(job)
-                log.msg(format="Unable to start job %(id)s: %(reason)s",
-                        reason=exc_repr(error.value), id=job.identifier,
-                        logLevel=logging.ERROR)
+                self.log.error('Unable to start job {}: {}'.format(
+                    job.identifier, exc_repr(error.value)))
                 del self.running_jobs[job.identifier]
 
             #-------------------------------------------------------------------
@@ -299,8 +312,8 @@ class Controller(Service):
                 # dictionary
                 running_job = RunningJob(value[0], value[1], datetime.now())
                 self.running_jobs[job.identifier] = running_job
-                log.msg(format="Job %(id)s started successfully",
-                        id=job.identifier, logLevel=logging.INFO)
+                self.log.info('Job {} started successfully'.format(
+                    job.identifier))
 
                 #---------------------------------------------------------------
                 # Finish things up
@@ -315,10 +328,9 @@ class Controller(Service):
 
                     rj = self.running_jobs[job.identifier]
                     job.duration = (datetime.now() - rj.time_started).seconds
-                    log.msg(format="Job %(id)s exited with code %(exit_code)s",
-                            id=job.identifier, exit_code=exit_code,
-                            logLevel=logging.INFO)
-
+                    msg = "Job {} exited with code {}".format(job.identifier,
+                                                              exit_code)
+                    self.log.info(msg)
                     self.schedule.commit_job(job)
                     del self.running_jobs[job.identifier]
                     return exit_code
@@ -367,6 +379,7 @@ class Controller(Service):
     @inlineCallbacks
     def cancel_job(self, job_id):
         job = self.schedule.get_job(job_id)
+        self.log.info('Canceling: {}'.format(str(job)))
 
         #-----------------------------------------------------------------------
         # Scheduled
@@ -412,8 +425,12 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def purge_completed_jobs(self):
-        completed_jobs = self.get_completed_jobs()
-        for job in completed_jobs[self.completed_cap:]:
+        old_jobs = self.get_completed_jobs()[self.completed_cap:]
+
+        if len(old_jobs):
+            self.log.info('Purging {} old jobs'.format(len(old_jobs)))
+
+        for job in old_jobs:
             self.schedule.remove_job(job.identifier)
             for log_type in ['.out', '.err']:
                 log_file = os.path.join(self.log_dir, job.identifier + log_type)
