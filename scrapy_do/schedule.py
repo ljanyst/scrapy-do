@@ -140,6 +140,24 @@ class Schedule:
         return [_record_to_job(rec) for rec in response]
 
     #---------------------------------------------------------------------------
+    def get_active_jobs(self):
+        query = "SELECT * FROM {table} WHERE " \
+                "status=1 OR status=2 OR status=3 "\
+                "ORDER BY timestamp DESC"
+        query = query.format(table=self.table)
+        response = self.db.execute(query)
+        return [_record_to_job(rec) for rec in response]
+
+    #---------------------------------------------------------------------------
+    def get_completed_jobs(self):
+        query = "SELECT * FROM {table} WHERE " \
+                "status=4 OR status=5 OR status=5 "\
+                "ORDER BY timestamp DESC"
+        query = query.format(table=self.table)
+        response = self.db.execute(query)
+        return [_record_to_job(rec) for rec in response]
+
+    #---------------------------------------------------------------------------
     def get_job(self, identifier):
         """
         Retrieve a job by id
