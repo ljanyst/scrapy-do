@@ -5,6 +5,10 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+"""
+Functionality related to the database of jobs.
+"""
+
 import dateutil.parser
 import sqlite3
 import uuid
@@ -16,6 +20,9 @@ from enum import Enum
 
 #-------------------------------------------------------------------------------
 class Status(Enum):
+    """
+    Status of the job.
+    """
     SCHEDULED = 1
     PENDING = 2
     RUNNING = 3
@@ -26,12 +33,18 @@ class Status(Enum):
 
 #-------------------------------------------------------------------------------
 class Actor(Enum):
+    """
+    An entity responsible for job creation.
+    """
     SCHEDULER = 1
     USER = 2
 
 
 #-------------------------------------------------------------------------------
 class Job:
+    """
+    A bin for all the parameters of a job.
+    """
 
     status = TimeStamper('_status')
     actor = TimeStamper('_actor')
@@ -61,6 +74,9 @@ class Job:
 
     #---------------------------------------------------------------------------
     def to_dict(self):
+        """
+        Return all the parameters of the job as a dictionary
+        """
         d = {
             'identifier': self.identifier,
             'status': self.status.name,
@@ -86,7 +102,10 @@ def _record_to_job(x):
 #-------------------------------------------------------------------------------
 class Schedule:
     """
-    A persistent database of jobs
+    A persistent database of jobs.
+
+    :param database: A file name where the database will be stored
+    :param table:    Name of the table containing the schedule
     """
 
     #---------------------------------------------------------------------------
@@ -140,6 +159,8 @@ class Schedule:
     def get_jobs(self, job_status):
         """
         Retrieve a list of jobs with a given status
+
+        :param job_status: One of :class:`statuses <Status>`
         """
         query = "SELECT * FROM {table} WHERE status=? ORDER BY timestamp DESC"
         query = query.format(table=self.table)
@@ -148,6 +169,11 @@ class Schedule:
 
     #---------------------------------------------------------------------------
     def get_active_jobs(self):
+        """
+        Retrieve all the active jobs. Ie. all the jobs whose status is one of
+        the following: :data:`SCHEDULED <Status.SCHEDULED>`,
+        :data:`PENDING <Status.PENDING>`, or :data:`RUNNING <Status.RUNNING>`.
+        """
         query = "SELECT * FROM {table} WHERE " \
                 "status=1 OR status=2 OR status=3 "\
                 "ORDER BY timestamp DESC"
@@ -157,6 +183,11 @@ class Schedule:
 
     #---------------------------------------------------------------------------
     def get_completed_jobs(self):
+        """
+        Retrieve all the completed jobs. Ie. all the jobs whose status is one of
+        the  following: :data:`SUCCESSFUL <Status.SUCCESSFUL>`,
+        :data:`FAILED <Status.FAILED>`, or :data:`CANCELED <Status.CANCELED>`.
+        """
         query = "SELECT * FROM {table} WHERE " \
                 "status=4 OR status=5 OR status=5 "\
                 "ORDER BY timestamp DESC"
@@ -168,6 +199,8 @@ class Schedule:
     def get_job(self, identifier):
         """
         Retrieve a job by id
+
+        :param identifier: A string identifier of the job
         """
         query = "SELECT * FROM {table} WHERE identifier=?"
         query = query.format(table=self.table)
@@ -181,6 +214,8 @@ class Schedule:
     def add_job(self, job):
         """
         Add a job to the database
+
+        :param job: A :class:`Job <Job>` object
         """
         query = "INSERT INTO {table}" \
                 "(identifier, status, actor, schedule, project, spider, " \
@@ -196,6 +231,8 @@ class Schedule:
     def commit_job(self, job):
         """
         Modify an existing job
+
+        :param job: A :class:`Job <Job>` object
         """
         query = "REPLACE INTO {table}" \
                 "(identifier, status, actor, schedule, project, spider, " \
@@ -210,7 +247,9 @@ class Schedule:
     #---------------------------------------------------------------------------
     def remove_job(self, job_id):
         """
-        Remova a job from the database
+        Remove a job from the database
+
+        :param identifier: A string identifier of the job
         """
         query = "DELETE FROM {table} WHERE identifier=?"
         query = query.format(table=self.table)
