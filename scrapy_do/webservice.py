@@ -16,6 +16,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
+from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
 from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
 from scrapy_do.utils import get_object
@@ -238,6 +239,18 @@ class CancelJob(JsonResource):
             request.finish()
         do_async()
         return NOT_DONE_YET
+
+
+#-------------------------------------------------------------------------------
+class GetLog(resource.Resource):
+
+    isLeaf = False
+
+    #---------------------------------------------------------------------------
+    def __init__(self, parent):
+        super(GetLog, self).__init__()
+        data = File(parent.controller.log_dir, defaultType='text/plain')
+        self.putChild(b'data', data)
 
 
 #-------------------------------------------------------------------------------
