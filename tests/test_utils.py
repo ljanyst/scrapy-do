@@ -8,7 +8,9 @@
 import unittest
 import schedule
 
-from scrapy_do.utils import get_object, schedule_job
+from dateutil.relativedelta import relativedelta
+from scrapy_do.utils import get_object, schedule_job, pprint_relativedelta
+from datetime import datetime
 
 
 #-------------------------------------------------------------------------------
@@ -44,3 +46,11 @@ class UtilsTests(unittest.TestCase):
 
         for spec in valid_specs:
             schedule_job(scheduler, spec).do(mock_job)
+
+    #---------------------------------------------------------------------------
+    def test_pprint(self):
+        now = datetime.now()
+        future = now + relativedelta(years=+1, months=+2, days=+3, hours=+4,
+                                     minutes=+5, seconds=+6)
+        diff = pprint_relativedelta(relativedelta(future, now))
+        self.assertEqual(diff, '1y 3d 4h 5m 6s')
