@@ -46,8 +46,17 @@ class WebServicesTests(unittest.TestCase):
                         spider='toscrape-xpath')
         self.job2 = Job(JobStatus.SCHEDULED, Actor.USER, schedule='now',
                         project='quotesbot', spider='toscrape-css')
+        self.job3 = Job(JobStatus.CANCELED, Actor.SCHEDULER,
+                        schedule='now', project='quotesbot',
+                        spider='toscrape-xpath')
+        self.job4 = Job(JobStatus.SUCCESSFUL, Actor.USER, schedule='now',
+                        project='quotesbot', spider='toscrape-css')
         self.web_app.controller.get_job.return_value = self.job1
         self.web_app.controller.get_jobs.return_value = [self.job2]
+        active_jobs = [self.job1, self.job2]
+        done_jobs = [self.job3, self.job4]
+        self.web_app.controller.get_active_jobs.return_value = active_jobs
+        self.web_app.controller.get_completed_jobs.return_value = done_jobs
         self.web_app.controller.start_time = datetime.now()
         self.web_app.controller.counter_run = 0
         self.web_app.controller.counter_success = 0
@@ -227,7 +236,8 @@ class WebServicesTests(unittest.TestCase):
         service = ListJobs(self.web_app)
         request = Mock()
         request.method = 'GET'
-        request.args = {b'id': [self.job1.identifier.encode('utf-8')]}
+        job_id = self.job1.identifier
+        request.args = {b'id': [job_id.encode('utf-8')]}
         retval = service.render(request)
         decoded = json.loads(retval)
         self.assertIn('status', decoded)
@@ -237,6 +247,7 @@ class WebServicesTests(unittest.TestCase):
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0]['identifier'], self.job1.identifier)
         self.assertEqual(jobs[0]['schedule'], self.job1.schedule)
+        self.web_app.controller.get_job.assert_called_with(job_id)
 
         #-----------------------------------------------------------------------
         # List jobs by status
@@ -254,6 +265,32 @@ class WebServicesTests(unittest.TestCase):
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0]['identifier'], self.job2.identifier)
         self.assertEqual(jobs[0]['schedule'], self.job2.schedule)
+        self.web_app.controller.get_jobs.assert_called_with(JobStatus.PENDING)
+
+        #-----------------------------------------------------------------------
+        # List active and completed jobs
+        #-----------------------------------------------------------------------
+        statuses = ['ACTIVE', 'COMPLETED']
+        valid_statuses = [
+            ['SCHEDULED', 'PENDING', 'RUNNING'],
+            ['SUCCESSFUL', 'FAILED', 'CANCELED']
+        ]
+        num_jobs = [2, 2]
+
+        for i in range(len(statuses)):
+            service = ListJobs(self.web_app)
+            request = Mock()
+            request.method = 'GET'
+            request.args = {b'status': [statuses[i].encode('utf-8')]}
+            retval = service.render(request)
+            decoded = json.loads(retval)
+            self.assertIn('status', decoded)
+            self.assertIn('jobs', decoded)
+            self.assertEqual(decoded['status'], 'ok')
+            jobs = decoded['jobs']
+            self.assertEqual(len(jobs), num_jobs[i])
+            for job in jobs:
+                self.assertIn(job['status'], valid_statuses[i])
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
