@@ -263,6 +263,8 @@ def pprint_relativedelta(delta):
     ret = ''
     if delta.years:
         ret += '{}y '.format(delta.years)
+    if delta.months:
+        ret += '{}m '.format(delta.months)
     if delta.days:
         ret += '{}d '.format(delta.days)
     if delta.hours:
