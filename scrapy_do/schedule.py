@@ -84,6 +84,9 @@ class Schedule:
 
     #---------------------------------------------------------------------------
     def __init__(self, database=None, table='schedule'):
+        #-----------------------------------------------------------------------
+        # Create the database and the main table
+        #-----------------------------------------------------------------------
         self.database = database or ':memory:'
         self.table = table
         self.db = sqlite3.connect(self.database,
@@ -101,6 +104,30 @@ class Schedule:
                 ")"
         query = query.format(table=self.table)
         self.db.execute(query)
+
+        #-----------------------------------------------------------------------
+        # Create the metadata table
+        #-----------------------------------------------------------------------
+        query = 'CREATE TABLE IF NOT EXISTS schedule_metadata (' \
+                'key VARCHAR(255) PRIMARY KEY ON CONFLICT IGNORE, ' \
+                'value VARCHAR(255) NOT NULL ' \
+                ')'
+        self.db.execute(query)
+
+        query = 'INSERT INTO schedule_metadata ' \
+                '(key, value) values ("version", "1") '
+        self.db.execute(query)
+        self.db.commit()
+
+    #---------------------------------------------------------------------------
+    def get_metadata(self, key):
+        """
+        Retrieve the matadata info with a given key
+        """
+        query = "SELECT * FROM schedule_metadata WHERE key=?"
+        response = self.db.execute(query, (key, ))
+        response = dict(response)
+        return response[key]
 
     #---------------------------------------------------------------------------
     def get_jobs(self, job_status):
