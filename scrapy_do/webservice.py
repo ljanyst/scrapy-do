@@ -7,8 +7,11 @@
 
 import os
 import json
+import time
 import psutil
+import socket
 
+from dateutil.relativedelta import relativedelta
 from twisted.internet.defer import inlineCallbacks
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
@@ -19,7 +22,8 @@ from scrapy_do.utils import get_object
 from zope.interface import implementer
 from twisted.web import resource
 from .schedule import Status as JobStatus
-from .utils import arg_require_all, arg_require_any
+from datetime import datetime
+from .utils import arg_require_all, arg_require_any, pprint_relativedelta
 
 
 #-------------------------------------------------------------------------------
@@ -93,9 +97,19 @@ class Status(JsonResource):
     #---------------------------------------------------------------------------
     def render_GET(self, request):
         p = psutil.Process(os.getpid())
+        controller = self.parent.controller
+        uptime = relativedelta(datetime.now(), controller.start_time)
         resp = {
-            'memory-usage': p.memory_info().rss,
-            'cpu-usage': p.cpu_percent()
+            'memory-usage': float(p.memory_info().rss) / 1024. / 1024.,
+            'cpu-usage': p.cpu_percent(),
+            'time': str(datetime.now()),
+            'timezone': "{}; {}".format(time.tzname[0], time.tzname[1]),
+            'hostname': socket.gethostname(),
+            'uptime': pprint_relativedelta(uptime),
+            'jobs-run': controller.counter_run,
+            'jobs-successful': controller.counter_success,
+            'jobs-failed': controller.counter_failure,
+            'jobs-canceled': controller.counter_cancel
         }
         return resp
 
