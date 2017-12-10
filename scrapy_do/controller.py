@@ -5,6 +5,11 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+"""
+All the functionality running for running the jobs and keeping a proper record
+of them.
+"""
+
 import tempfile
 import pickle
 import shutil
@@ -32,7 +37,16 @@ RunningJob = namedtuple('RunningJob', ['process', 'finished_d', 'time_started'])
 class Controller(Service):
     """
     An object of this class is responsible for glueing together all the other
-    components.
+    components. It needs the following options in the `scrapy-do` section of
+    the configuration:
+
+      * `project-store` - a directory for all the data and metadata.
+      * `job-slots` - number of jobs to run in parallel
+      * `completed-cap` - number of completed jobs to keep while purging the old
+        jobs
+
+    :param config: A :class:`Config <scrapy_do.config.Config>`.
+                   contains the following options in the `scrapy-do` section:
     """
 
     log = Logger()
@@ -113,6 +127,9 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def startService(self):
+        """
+        Start the twisted related functionality.
+        """
         self.log.info('Starting controller')
         self.scheduler_loop.start(1.)
         self.crawlers_loop.start(1.)
@@ -120,6 +137,9 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def stopService(self):
+        """
+        Stop the twisted related functionality.
+        """
         self.log.info('Stopping controller')
         self.scheduler_loop.stop()
         self.crawlers_loop.stop()
@@ -129,6 +149,14 @@ class Controller(Service):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def push_project(self, name, data):
+        """
+        Register a project of a given name with the zipped code passed in data.
+
+        :param name: Name of the project
+        :param data: Binary blob with a zipped project code
+        :return:     A deferred that gets called back with a list of spiders
+                     provided by the project, of a `ValueError` failure.
+        """
         self.log.info('Pushing project "{}"'.format(name))
 
         #-----------------------------------------------------------------------
@@ -190,16 +218,36 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def get_projects(self):
+        """
+        Get the names of all the registred projects.
+        """
         return list(self.projects.keys())
 
     #---------------------------------------------------------------------------
     def get_spiders(self, project_name):
+        """
+        Get names of all the spiders in the project.
+
+        :param project_name: Name of the project
+        :raises KeyError:    If the project name is not known
+        """
         if project_name not in self.projects.keys():
             raise KeyError('Unknown project ' + project_name)
         return self.projects[project_name].spiders
 
     #---------------------------------------------------------------------------
     def schedule_job(self, project, spider, when, actor=Actor.USER):
+        """
+        Schedule a crawler job.
+
+        :param project: Name of the project
+        :param spider:  Name of the spider
+        :param when:    A scheduling spec as handled by :meth:`schedule_job
+                        <scrapy_do.utils.schedule_job>`
+        :param actor:   :data:`Actor <scrapy_do.schedule.Actor>` triggering the
+                        event
+        :return:        A string identifier of a job
+        """
         if project not in self.projects.keys():
             raise KeyError('Unknown project ' + project)
 
@@ -221,22 +269,39 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def get_jobs(self, job_status):
+        """
+        See :meth:`Schedule.get_jobs <scrapy_do.schedule.Schedule.get_jobs>`.
+        """
         return self.schedule.get_jobs(job_status)
 
     #---------------------------------------------------------------------------
     def get_active_jobs(self):
+        """
+        See :meth:`Schedule.get_active_jobs
+        <scrapy_do.schedule.Schedule.get_active_jobs>`.
+        """
         return self.schedule.get_active_jobs()
 
     #---------------------------------------------------------------------------
     def get_completed_jobs(self):
+        """
+        See :meth:`Schedule.get_completed_jobs
+        <scrapy_do.schedule.Schedule.get_completed_jobs>`.
+        """
         return self.schedule.get_completed_jobs()
 
     #---------------------------------------------------------------------------
     def get_job(self, job_id):
+        """
+        See :meth:`Schedule.get_job <scrapy_do.schedule.Schedule.get_job>`.
+        """
         return self.schedule.get_job(job_id)
 
     #---------------------------------------------------------------------------
     def run_scheduler(self):
+        """
+        Run the `schedule.Scheduler` jobs.
+        """
         self.scheduler.run_pending()
 
     #---------------------------------------------------------------------------
@@ -277,6 +342,10 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def run_crawlers(self):
+        """
+        Spawn as many crawler processe out of pending jobs as there is free
+        job slots.
+        """
         jobs = self.schedule.get_jobs(Status.PENDING)
         jobs.reverse()
         while len(self.running_jobs) < self.job_slots and jobs:
@@ -343,6 +412,11 @@ class Controller(Service):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def wait_for_starting_jobs(self):
+        """
+        Wait until all the crawling processes in the job slots started.
+
+        :return: A deferred triggered when all the processes have started
+        """
         num_starting = 1  # whatever to loop at least once
         while num_starting:
             num_starting = 0
@@ -354,6 +428,14 @@ class Controller(Service):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def wait_for_running_jobs(self, cancel=False):
+        """
+        Wait for all the running jobs to finish.
+
+        :param cancel: If `True` send a `SIGTERM` signal to each of the running
+                       crawlers
+        :return:       A deferred triggered when all the running jobs have
+                       finished
+        """
         yield self.wait_for_starting_jobs()
 
         #-----------------------------------------------------------------------
@@ -378,6 +460,12 @@ class Controller(Service):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def cancel_job(self, job_id):
+        """
+        Cancel a job.
+
+        :param job_id: A string identifier of a job
+        :return:       A deferred that is triggered when the job is cancelled
+        """
         job = self.schedule.get_job(job_id)
         self.log.info('Canceling: {}'.format(str(job)))
 
@@ -425,6 +513,9 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def purge_completed_jobs(self):
+        """
+        Purge all the old jobs exceeding the completed cap.
+        """
         old_jobs = self.get_completed_jobs()[self.completed_cap:]
 
         if len(old_jobs):
