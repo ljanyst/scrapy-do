@@ -5,7 +5,7 @@ with open('README.rst') as readme:
 
 setup(
     name = 'scrapy-do',
-    version = '0.1',
+    version = '0.1.0',
     author = 'Lukasz Janyst',
     author_email = 'xyz@jany.st',
     url = 'https://jany.st/scrapy-do.html',
