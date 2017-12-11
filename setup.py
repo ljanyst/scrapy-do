@@ -3,13 +3,9 @@ from setuptools import setup
 with open('README.rst') as readme:
     long_description = readme.read()
 
-with open('VERSION') as readme:
-    version = readme.readlines()[0].strip()
-    print(version)
-
 setup(
     name = 'scrapy-do',
-    version = version,
+    version = '0.1',
     author = 'Lukasz Janyst',
     author_email = 'xyz@jany.st',
     url = 'https://jany.st/scrapy-do.html',
