@@ -9,6 +9,10 @@ Scrapy Do
 .. image:: https://coveralls.io/repos/github/ljanyst/scrapy-do/badge.svg?branch=master
    :target: https://coveralls.io/github/ljanyst/scrapy-do?branch=master
 
+.. image:: https://img.shields.io/pypi/v/scrapy-do.svg
+   :target: https://pypi.python.org/pypi/scrapy-do
+   :alt: PyPI Version
+
 
 Scrapy Do is a daemon that provides a convenient way to run `Scrapy
 <https://scrapy.org/>`_ spiders. It can either do it once - immediately; or it
