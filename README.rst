@@ -22,7 +22,7 @@ the time being, it only comes with a REST API. Version 0.2.0 will come with a
 command line client, and version 0.3.0 will have an interactive web interface.
 
  * Homepage: `https://jany.st/scrapy-do.html <https://jany.st/scrapy-do.html>`_
- * Documentation: `https://scrapy-do.readthedocs.io/en/stable/ <https://scrapy-do.readthedocs.io/en/stable/>`_
+ * Documentation: `https://scrapy-do.readthedocs.io/en/latest/ <https://scrapy-do.readthedocs.io/en/latest/>`_
 
 -----------
 Quick Start
