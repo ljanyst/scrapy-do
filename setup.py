@@ -12,7 +12,7 @@ setup(
     version = version,
     author = 'Lukasz Janyst',
     author_email = 'xyz@jany.st',
-    url = 'https://github.com/ljanyst/scrapy-do',
+    url = 'https://jany.st/scrapy-do.html',
     description = 'Spider Runner for Scrapy',
     long_description = long_description,
     license = 'BSD License',
