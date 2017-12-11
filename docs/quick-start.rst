@@ -1,28 +1,6 @@
-
-=========
-Scrapy Do
-=========
-
-.. image:: https://api.travis-ci.org/ljanyst/scrapy-do.svg?branch=master
-   :target: https://travis-ci.org/ljanyst/scrapy-do
-
-.. image:: https://coveralls.io/repos/github/ljanyst/scrapy-do/badge.svg?branch=master
-   :target: https://coveralls.io/github/ljanyst/scrapy-do?branch=master
-
-
-Scrapy Do is a daemon that provides a convenient way to run `Scrapy
-<https://scrapy.org/>`_ spiders. It can either do it once - immediately; or it
-can run them periodically, at specified time intervals. It's been inspired by
-`scrapyd <https://github.com/scrapy/scrapyd>`_ but written from scratch. For
-the time being, it only comes with a REST API. Version 0.2.0 will come with a
-command line client, and version 0.3.0 will have an interactive web interface.
-
- * Homepage: `https://jany.st/scrapy-do.html <https://jany.st/scrapy-do.html>`_
- * Documentation: `https://asdf.sadf <https://asf.asdf>`_
-
------------
+===========
 Quick Start
------------
+===========
 
 * Install ``scrapy-do`` using ``pip``:
 
