@@ -9,7 +9,7 @@ setup(
     author = 'Lukasz Janyst',
     author_email = 'xyz@jany.st',
     url = 'https://jany.st/scrapy-do.html',
-    description = 'Spider Runner for Scrapy',
+    description = 'A Spider Runner for Scrapy',
     long_description = long_description,
     license = 'BSD License',
     packages = ['scrapy_do'],
