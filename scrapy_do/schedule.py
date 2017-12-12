@@ -196,6 +196,18 @@ class Schedule:
         return [_record_to_job(rec) for rec in response]
 
     #---------------------------------------------------------------------------
+    def get_scheduled_jobs(self, project):
+        """
+        Retrieve all the scheduled jobs for the given project.
+        """
+        query = "SELECT * FROM {table} WHERE " \
+                "status=1 AND project=?" \
+                "ORDER BY timestamp DESC"
+        query = query.format(table=self.table)
+        response = self.db.execute(query, (project, ))
+        return [_record_to_job(rec) for rec in response]
+
+    #---------------------------------------------------------------------------
     def get_job(self, identifier):
         """
         Retrieve a job by id
