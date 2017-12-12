@@ -203,6 +203,24 @@ class Controller(Service):
         shutil.rmtree(temp_dir)
 
         #-----------------------------------------------------------------------
+        # Check if we have had the project registered before and if we
+        # have some scheduled jobs for the spiders of this project that
+        # are not present in the new archive
+        #-----------------------------------------------------------------------
+        if name in self.projects:
+            sched_jobs = self.schedule.get_scheduled_jobs(name)
+            sched_spiders = [job.spider for job in sched_jobs]
+            for spider in sched_spiders:
+                if spider not in spiders:
+                    os.remove(tmp[1])
+                    msg = 'Spider {} is going to be removed but has ' \
+                          'scheduled jobs'
+                    msg = msg.format(spider)
+                    self.log.info('Failed to push project "{}": {}'.format(
+                        name, msg))
+                    raise ValueError(msg)
+
+        #-----------------------------------------------------------------------
         # Move to the final position and store the matadata
         #-----------------------------------------------------------------------
         archive = os.path.join(self.project_store, name + '.zip')
