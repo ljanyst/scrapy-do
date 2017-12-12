@@ -25,6 +25,9 @@ class ControllerTests(unittest.TestCase):
         with open('tests/quotesbot.zip', 'rb') as f:
             self.project_archive_data = f.read()
 
+        with open('tests/quotesbot-no-css.zip', 'rb') as f:
+            self.project_no_css_archive_data = f.read()
+
         self.temp_dir = tempfile.mkdtemp()
         self.config = Mock()
         self.config.get_string.return_value = self.temp_dir
@@ -136,6 +139,21 @@ class ControllerTests(unittest.TestCase):
             self.assertFalse(os.path.exists(temp_test_file[1]))
             self.assertIn('toscrape-css', spiders)
             self.assertIn('toscrape-xpath', spiders)
+
+        #-----------------------------------------------------------------------
+        # Schedule a job for one of the spiders and remove it in the new
+        # archive
+        #-----------------------------------------------------------------------
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every 25 minutes')
+        try:
+            yield controller.push_project('quotesbot',
+                                          self.project_no_css_archive_data)
+            self.fail('Inserting a project without a spider having scheduled '
+                      'jobs should fail')
+        except ValueError as e:
+            self.assertTrue(str(e).startswith('Spider toscrape-css'))
+
+        yield controller.push_project('quotesbot', self.project_archive_data)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
