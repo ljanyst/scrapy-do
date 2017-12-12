@@ -79,6 +79,11 @@ class ScheduleTests(unittest.TestCase):
             self.assertIn(job.status,
                           [Status.CANCELED, Status.SUCCESSFUL, Status.FAILED])
 
+        sched_proj2 = self.schedule.get_scheduled_jobs('testproj2')
+        for job in sched_proj2:
+            self.assertEqual(job.project, 'testproj2')
+            self.assertEqual(job.status, Status.SCHEDULED)
+
     #---------------------------------------------------------------------------
     def test_change(self):
         pending_jobs = self.schedule.get_jobs(Status.PENDING)
