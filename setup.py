@@ -33,6 +33,6 @@ setup(
     ],
     install_requires = [
         'scrapy', 'twisted', 'pyOpenSSL', 'psutil', 'python-dateutil',
-        'schedule'
+        'schedule', 'pem'
     ]
 )
