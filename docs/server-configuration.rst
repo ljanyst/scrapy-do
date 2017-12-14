@@ -40,6 +40,12 @@ parameters.
 
 * **cert**: Path to your certificate. Defaults to: ``scrapy-do.crt``.
 
+* **chain**: Path to a file containing additional certificates in the chain of
+  trust. Useful when using Let's Encrypt because their signing certificate
+  is trusted by browsers but not by OS iteslf, leading to commadnline tools like
+  `wget` or `curl` failing to verify the certificate. Defaults to an empty
+  string.
+
 * **auth**: The authentication switch. Scrapy Do uses the digest authentication
   method and it will not transmit your password over the network. Therefore,
   it's safe to use even without TLS. Defaults to ``off``.
