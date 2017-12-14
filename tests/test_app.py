@@ -58,7 +58,8 @@ default_config = {
         'https': False,
         'auth': False,
         'cert': 'scrapy-do.crt',
-        'key': 'scrapy-do.key'
+        'key': 'scrapy-do.key',
+        'chain': 'ca.crt'
     },
     'web-modules': {
         'status.json': 'scrapy_do.webservice.Status',
@@ -75,12 +76,14 @@ class AppConfigTests(unittest.TestCase):
         current_path = os.path.dirname(__file__)
         cert_file = os.path.join(current_path, 'scrapy-do.crt')
         key_file = os.path.join(current_path, 'scrapy-do.key')
+        chain_file = os.path.join(current_path, 'ca.crt')
         self.pstore_path = tempfile.mkdtemp()
 
         self.config = deepcopy(default_config)
         self.config['scrapy-do']['project-store'] = self.pstore_path
         self.config['web']['cert'] = cert_file
         self.config['web']['key'] = key_file
+        self.config['web']['chain'] = chain_file
 
         self.service_maker = ScrapyDoServiceMaker()
 
@@ -91,14 +94,14 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         config = build_mock_config(self.config)
         web_config = self.service_maker._validate_web_config(config)
-        self.assertEqual(len(web_config), 7)
+        self.assertEqual(len(web_config), 8)
 
         #-----------------------------------------------------------------------
         # Correct HTTPS config
         #-----------------------------------------------------------------------
         self.config['web']['https'] = True
         web_config = self.service_maker._validate_web_config(config)
-        self.assertEqual(len(web_config), 7)
+        self.assertEqual(len(web_config), 8)
         self.config['web']['https'] = False
 
         #-----------------------------------------------------------------------
