@@ -7,9 +7,11 @@
 
 import unittest
 import schedule
+import os
 
 from dateutil.relativedelta import relativedelta
 from scrapy_do.utils import get_object, schedule_job, pprint_relativedelta
+from scrapy_do.utils import SSLCertOptions
 from datetime import datetime
 
 
@@ -54,3 +56,30 @@ class UtilsTests(unittest.TestCase):
                                      minutes=+5, seconds=+6)
         diff = pprint_relativedelta(relativedelta(future, now))
         self.assertEqual(diff, '1y 2m 3d 4h 5m 6s')
+
+    #---------------------------------------------------------------------------
+    def test_ssl_context_factory(self):
+        current_path = os.path.dirname(__file__)
+        cert_file = os.path.join(current_path, 'scrapy-do.crt')
+        key_file = os.path.join(current_path, 'scrapy-do.key')
+        chain_file = os.path.join(current_path, 'ca.crt')
+
+        fact1 = SSLCertOptions(key_file, cert_file)
+        fact2 = SSLCertOptions(key_file, cert_file, chain_file)
+
+        context_old1 = fact1.getContext()
+        context_old2 = fact2.getContext()
+
+        context_nc1 = fact1.getContext()
+        context_nc2 = fact2.getContext()
+
+        fact1.load_time = 0
+        fact2.load_time = 0
+
+        context_new1 = fact1.getContext()
+        context_new2 = fact2.getContext()
+
+        self.assertEqual(context_old1, context_nc1)
+        self.assertEqual(context_old2, context_nc2)
+        self.assertNotEqual(context_old1, context_new1)
+        self.assertNotEqual(context_old2, context_new2)
