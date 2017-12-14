@@ -10,10 +10,14 @@ A collection of utility classes and functions used throughout the project.
 """
 
 import importlib
+import OpenSSL
+import time
+import pem
 import os
 
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
+from twisted.internet.ssl import CertificateOptions
 from twisted.internet import reactor, task
 from distutils.spawn import find_executable
 from datetime import datetime
@@ -339,3 +343,154 @@ def pprint_relativedelta(delta):
         ret += '{}m '.format(delta.minutes)
     ret += '{}s'.format(delta.seconds)
     return ret
+
+
+#-------------------------------------------------------------------------------
+def load_cert_chain(t, data):
+    """
+    Load X509 objects from all the certificates in the given PEM data.
+
+    :param t:    format type; only :data:`OpenSSL.crypto.FILETYPE_PEM` is
+                 supported; the parameter is here only to keep the same
+                 function signature as the other similar functions in
+                 pyOpenSSL
+    :param data: string containing certificate chain data in the PEM
+                 format
+    :return:     a list of X509 objects representing the certificates
+    """
+
+    if t != OpenSSL.crypto.FILETYPE_PEM:
+        raise OpenSSL.crypto.Error('Only the PEM format is supported')
+
+    certs_pem = pem.parse(data.encode('utf-8'))
+    certs = []
+    for cert_pem in certs_pem:
+        cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                               str(cert_pem))
+        certs.append(cert)
+    return certs
+
+
+#-------------------------------------------------------------------------------
+class SSLCertOptions(CertificateOptions):
+    """
+    This class implements an SSL context factory that remediates the problem
+    with the default factory not being able to handle arbitrary certificate
+    chains. It allows the user to pass file names instead of pyOpenSSL objects
+    which hides quite a lot of complexity. Furthermore, any time an SSL
+    context object is requested it check the mtime of the files to see if
+    they have been changed. If they were changed, they are reloaded. Doing
+    things this way allows you to renew your certificates without having
+    to restart the server. It's quite convenient if you use Let's Encrypt
+    as a CA which offers certificates with 90 days lifespan. The class
+    extends the functionality of the recommended `CertificateOptions` factory
+    and constructs it with the defaults, except for the parameters described
+    below.
+
+    :param key_file:   A file containing the private key in either ASN.1 or PEM
+                       format
+    :param cert_file:  A file containing the certificate in either ASN.1 or PEM
+                       format.
+    :param chain_file: A file containing any additional certificates in the
+                       chain of trust in the PEM format
+    """
+
+    #---------------------------------------------------------------------------
+    def __init__(self, key_file, cert_file, chain_file=None):
+        self.key_file = key_file
+        self.cert_file = cert_file
+        self.chain_file = chain_file if chain_file != '' else None
+        self.load_time = None
+
+        key, cert, chain = self.load_data()
+        super(SSLCertOptions, self).__init__(key, cert, extraCertChain=chain)
+        self.getContext()
+
+    #---------------------------------------------------------------------------
+    def load_data(self):
+        """
+        Load the pyOpenSSL objects from the user-supplied files the files were
+        modified since the last time we loaded them.
+
+        :return: a list containing the private key as a PKey object,
+                 the certificate as a X509 object, a possibly empty list
+                 of additional certificates in the chain of trust, all of them
+                 as X509 objects
+        """
+        #-----------------------------------------------------------------------
+        # Check if the data needs to be reloaded
+        #-----------------------------------------------------------------------
+        files = [self.key_file, self.cert_file, self.chain_file]
+        if self.load_time is not None:
+            reload_data = False
+            for fn in files:
+                if fn is None:
+                    continue
+                mtime = os.path.getmtime(fn)
+                if mtime > self.load_time:
+                    reload_data = True
+                    break
+            if not reload_data:
+                return (None, None, [])
+
+        #-----------------------------------------------------------------------
+        # Load the data
+        #-----------------------------------------------------------------------
+        types = [OpenSSL.crypto.FILETYPE_ASN1, OpenSSL.crypto.FILETYPE_PEM]
+        funcs = [
+            OpenSSL.crypto.load_privatekey,
+            OpenSSL.crypto.load_certificate,
+            load_cert_chain
+        ]
+        objs = []
+
+        for i in range(len(files)):
+
+            #-------------------------------------------------------------------
+            # Read the file if the name was specified
+            #-------------------------------------------------------------------
+            fn = files[i]
+            if fn is None:
+                objs.append(None)
+                continue
+
+            with open(fn) as f:
+                data = f.read()
+
+            #-------------------------------------------------------------------
+            # Try to load the object
+            #-------------------------------------------------------------------
+            obj = None
+            for t in types:
+                try:
+                    obj = funcs[i](t, data)
+                except OpenSSL.crypto.Error:
+                    pass
+
+                if obj is not None:
+                    break
+            objs.append(obj)
+
+        self.load_time = time.time()
+
+        #-----------------------------------------------------------------------
+        # Fix the chain value and return
+        #-----------------------------------------------------------------------
+        key, cert, chain = objs
+        if chain is None:
+            chain = []
+        return key, cert, chain
+
+    #---------------------------------------------------------------------------
+    def getContext(self):
+        """
+        Get the SSL context recreating it using new certificate data if
+        necessary.
+        """
+        key, cert, chain = self.load_data()
+        if key is not None:
+            self.privateKey = key
+            self.certificate = cert
+            self.extraCertChain = chain
+            self._context = None
+        return super(SSLCertOptions, self).getContext()
