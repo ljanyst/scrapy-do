@@ -14,6 +14,7 @@ import OpenSSL
 import time
 import pem
 import os
+import re
 
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
@@ -494,3 +495,33 @@ class SSLCertOptions(CertificateOptions):
             self.extraCertChain = chain
             self._context = None
         return super(SSLCertOptions, self).getContext()
+
+
+#-------------------------------------------------------------------------------
+def decode_addresses(addrs):
+    """
+    Find all IP address-port pairs in the given string. The convention follows
+    the definitions in RFC3986. For IPv4 it's: `xxx.xxx.xxx.xxx:xxxx`, and for
+    IPv6: `[xxxx::xxxx]:xxxx`.
+    """
+    exp = re.compile(r"""
+        [\s]*                                                # whitespaces
+        (
+            ((?P<IPv4>[\d.]+):(?P<portv4>\d+))|              # IPv4
+            (\[(?P<IPv6>[A-Fa-f0-9:\.]+)\]:(?P<portv6>\d+))  # IPv6
+        )
+    """, re.VERBOSE)
+
+    start = 0
+    addresses = []
+    while True:
+        match = exp.match(addrs, start)
+        if not match:
+            break
+        start = match.end()
+        if match.group('IPv4'):
+            addresses.append((match.group('IPv4'), int(match.group('portv4'))))
+        else:
+            addresses.append((match.group('IPv6'), int(match.group('portv6'))))
+
+    return addresses
