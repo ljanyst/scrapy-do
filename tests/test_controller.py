@@ -61,6 +61,14 @@ class ControllerTests(unittest.TestCase):
         controller = Controller(self.config)
         self.assertEqual(len(controller.scheduler.jobs), 2)
         self.assertEqual(len(controller.get_jobs(Status.PENDING)), 2)
+        yield twisted_sleep(3)
+        controller.run_scheduler()
+        pending_jobs = controller.get_jobs(Status.PENDING)
+        pending_spiders = [job.spider for job in pending_jobs]
+        self.assertEqual(len(pending_jobs), 4)
+
+        for spider in ['toscrape-css', 'toscrape-xpath', 'bar1', 'bar2']:
+            self.assertIn(spider, pending_spiders)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
