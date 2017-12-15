@@ -102,8 +102,9 @@ class Controller(Service):
         for job in self.schedule.get_jobs(Status.SCHEDULED):
             self.log.info('Re-scheduling: {}'.format(str(job)))
             sch_job = schedule_job(self.scheduler, job.schedule)
-            sch_job.do(lambda: self.schedule_job(job.project, job.spider, 'now',
-                                                 Actor.SCHEDULER))
+            sch_job.do(lambda job: self.schedule_job(job.project, job.spider,
+                                                     'now', Actor.SCHEDULER),
+                       job)
             self.scheduled_jobs[job.identifier] = sch_job
 
         #-----------------------------------------------------------------------
