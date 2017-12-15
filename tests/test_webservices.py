@@ -10,6 +10,7 @@ import json
 from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.webservice import Status, PushProject, ListProjects, ListSpiders
 from scrapy_do.webservice import ScheduleJob, ListJobs, CancelJob
+from scrapy_do.controller import Project
 from twisted.web.server import NOT_DONE_YET
 from scrapy_do.schedule import Job, Actor
 from scrapy_do.schedule import Status as JobStatus
@@ -62,6 +63,10 @@ class WebServicesTests(unittest.TestCase):
         self.web_app.controller.counter_success = 0
         self.web_app.controller.counter_failure = 0
         self.web_app.controller.counter_cancel = 0
+        self.web_app.controller.scheduled_jobs = []
+        prj1 = Project('a', 'a.zip', ['a', 'b'])
+        prj2 = Project('b', 'b.zip', ['c'])
+        self.web_app.controller.projects = [prj1, prj2]
 
     #---------------------------------------------------------------------------
     def test_status(self):
@@ -70,8 +75,12 @@ class WebServicesTests(unittest.TestCase):
         request.method = 'GET'
         retval = service.render(request)
         decoded = json.loads(retval)
-        self.assertIn('memory-usage', decoded)
-        self.assertIn('cpu-usage', decoded)
+        keys = ['memory-usage', 'cpu-usage', 'time', 'timezone', 'hostname',
+                'uptime', 'jobs-run', 'jobs-successful', 'jobs-failed',
+                'jobs-canceled', 'jobs-scheduled', 'projects', 'spiders',
+                'daemon-version']
+        for key in keys:
+            self.assertIn(key, decoded)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
