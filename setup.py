@@ -1,11 +1,12 @@
 from setuptools import setup
+from scrapy_do import __version__
 
 with open('README.rst') as readme:
     long_description = readme.read()
 
 setup(
     name = 'scrapy-do',
-    version = '0.1.0',
+    version = __version__,
     author = 'Lukasz Janyst',
     author_email = 'xyz@jany.st',
     url = 'https://jany.st/scrapy-do.html',
