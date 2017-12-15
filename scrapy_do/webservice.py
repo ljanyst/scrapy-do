@@ -23,6 +23,7 @@ from scrapy_do.utils import get_object
 from zope.interface import implementer
 from twisted.web import resource
 from .schedule import Status as JobStatus
+from scrapy_do import __version__
 from datetime import datetime
 from .utils import arg_require_all, arg_require_any, pprint_relativedelta
 
@@ -100,6 +101,8 @@ class Status(JsonResource):
         p = psutil.Process(os.getpid())
         controller = self.parent.controller
         uptime = relativedelta(datetime.now(), controller.start_time)
+        all_spiders = \
+            [spider for prj in controller.projects for spider in prj.spiders]
         resp = {
             'memory-usage': float(p.memory_info().rss) / 1024. / 1024.,
             'cpu-usage': p.cpu_percent(),
@@ -110,7 +113,11 @@ class Status(JsonResource):
             'jobs-run': controller.counter_run,
             'jobs-successful': controller.counter_success,
             'jobs-failed': controller.counter_failure,
-            'jobs-canceled': controller.counter_cancel
+            'jobs-canceled': controller.counter_cancel,
+            'jobs-scheduled': len(controller.scheduled_jobs),
+            'projects': len(controller.projects),
+            'spiders': len(all_spiders),
+            'daemon-version': __version__,
         }
         return resp
 
