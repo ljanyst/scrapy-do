@@ -11,7 +11,7 @@ import os
 
 from dateutil.relativedelta import relativedelta
 from scrapy_do.utils import get_object, schedule_job, pprint_relativedelta
-from scrapy_do.utils import SSLCertOptions
+from scrapy_do.utils import SSLCertOptions, decode_addresses
 from datetime import datetime
 
 
@@ -83,3 +83,15 @@ class UtilsTests(unittest.TestCase):
         self.assertEqual(context_old2, context_nc2)
         self.assertNotEqual(context_old1, context_new1)
         self.assertNotEqual(context_old2, context_new2)
+
+    #---------------------------------------------------------------------------
+    def test_decode_addresses(self):
+        test_string = '123.124.123.123:123 32.32.32.32:32 [::1]:20  '
+        test_string += '[2001:db8:122:344::192.0.2.33]:12'
+        addrs_decoded = decode_addresses(test_string)
+        addrs = [
+            ('123.124.123.123', 123), ('32.32.32.32', 32),
+            ('::1', 20), ('2001:db8:122:344::192.0.2.33', 12)
+        ]
+        for addr in addrs:
+            self.assertIn(addr, addrs_decoded)
