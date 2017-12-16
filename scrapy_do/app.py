@@ -17,7 +17,7 @@ from twisted.web import server
 from .webservice import get_web_app
 from .controller import Controller
 from .config import Config
-from .utils import exc_repr, SSLCertOptions
+from .utils import exc_repr, SSLCertOptions, decode_addresses
 
 
 #-------------------------------------------------------------------------------
@@ -37,8 +37,8 @@ class ScrapyDoServiceMaker():
 
     #---------------------------------------------------------------------------
     def _validate_web_config(self, config):
-        interface = config.get_string('web', 'interface')
-        port = config.get_int('web', 'port')
+        interfaces = config.get_string('web', 'interfaces')
+        interfaces = decode_addresses(interfaces)
         https = config.get_bool('web', 'https')
         auth = config.get_bool('web', 'auth')
         key_file = None
@@ -46,6 +46,9 @@ class ScrapyDoServiceMaker():
         chain_file = None
         auth_file = None
         files_to_check = []
+
+        if not interfaces:
+            raise ValueError('No valid web interfaces were configured')
 
         if https:
             key_file = config.get_string('web', 'key')
@@ -64,28 +67,35 @@ class ScrapyDoServiceMaker():
                 raise FileNotFoundError(
                     "No such file or directory: '{}'".format(path))
 
-        return interface, port, https, key_file, cert_file, chain_file, \
-            auth, auth_file
+        return interfaces, https, key_file, cert_file, chain_file, auth, \
+            auth_file
 
     #---------------------------------------------------------------------------
     def _configure_web_server(self, config, controller):
-        interface, port, https, key_file, cert_file, chain_file, _, _ = \
+        interfaces, https, key_file, cert_file, chain_file, _, _ = \
             self._validate_web_config(config)
 
         site = server.Site(get_web_app(config, controller))
-        if https:
-            cf = SSLCertOptions(key_file, cert_file, chain_file)
-            web_server = SSLServer(port, site, cf, interface=interface)
-            method = 'https'
-        else:
-            web_server = TCPServer(port, site, interface=interface)
-            method = 'http'
+        web_servers = []
 
-        log.msg(format="Scrapy-Do web interface is available at "
-                       "%(method)s://%(interface)s:%(port)s/",
-                method=method, interface=interface, port=port)
+        for interface, port in interfaces:
+            if https:
+                cf = SSLCertOptions(key_file, cert_file, chain_file)
+                web_server = SSLServer(port, site, cf, interface=interface)
+                method = 'https'
+            else:
+                web_server = TCPServer(port, site, interface=interface)
+                method = 'http'
 
-        return web_server
+            web_servers.append(web_server)
+
+            if ':' in interface:
+                interface = '[{}]'.format(interface)
+            log.msg(format="Scrapy-Do web interface is available at "
+                           "%(method)s://%(interface)s:%(port)s/",
+                    method=method, interface=interface, port=port)
+
+        return web_servers
 
     #---------------------------------------------------------------------------
     def makeService(self, options):
@@ -108,8 +118,9 @@ class ScrapyDoServiceMaker():
         # Set up the web server
         #-----------------------------------------------------------------------
         try:
-            web_server = self._configure_web_server(config, controller)
-            web_server.setServiceParent(top_service)
+            web_servers = self._configure_web_server(config, controller)
+            for web_server in web_servers:
+                web_server.setServiceParent(top_service)
         except Exception as e:
             log.msg(format="Scrapy-Do web interface could not have been "
                            "configured: %(reason)s",
