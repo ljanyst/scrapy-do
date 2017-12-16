@@ -53,8 +53,7 @@ default_config = {
         'completed-cap': 3
     },
     'web': {
-        'interface': '127.0.0.1',
-        'port': 7654,
+        'interfaces': '127.0.0.1:7654 [::1]:7654',
         'https': False,
         'auth': False,
         'cert': 'scrapy-do.crt',
@@ -94,24 +93,15 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         config = build_mock_config(self.config)
         web_config = self.service_maker._validate_web_config(config)
-        self.assertEqual(len(web_config), 8)
+        self.assertEqual(len(web_config), 7)
 
         #-----------------------------------------------------------------------
         # Correct HTTPS config
         #-----------------------------------------------------------------------
         self.config['web']['https'] = True
         web_config = self.service_maker._validate_web_config(config)
-        self.assertEqual(len(web_config), 8)
+        self.assertEqual(len(web_config), 7)
         self.config['web']['https'] = False
-
-        #-----------------------------------------------------------------------
-        # Incorrect HTTP config
-        #-----------------------------------------------------------------------
-        self.config['web']['port'] = 'asdf'
-        self.assertRaises(ValueError,
-                          f=self.service_maker._validate_web_config,
-                          config=config)
-        self.config['web']['port'] = 7654
 
         #-----------------------------------------------------------------------
         # Incorrect HTTPS config
@@ -148,10 +138,10 @@ class AppConfigTests(unittest.TestCase):
         config_class.return_value = config
         options = self.service_maker.options()
         with patch('scrapy_do.app.Config', config_class):
-            self.config['web']['port'] = 'asdf'
+            self.config['web']['interfaces'] = ''
             service = self.service_maker.makeService(options)
             self.assertIsInstance(service, MultiService)
-            self.config['web']['port'] = 7654
+            self.config['web']['interfaces'] = 'localhost:7654'
 
         #-----------------------------------------------------------------------
         # Broken controller
