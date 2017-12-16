@@ -53,7 +53,7 @@ default_config = {
         'completed-cap': 3
     },
     'web': {
-        'interfaces': '127.0.0.1:7654 [::1]:7654',
+        'interfaces': '127.0.0.1:7654',
         'https': False,
         'auth': False,
         'cert': 'scrapy-do.crt',
@@ -127,6 +127,16 @@ class AppConfigTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         self.config['web']['https'] = True
         self.service_maker._configure_web_server(config, controller)
+        self.config['web']['https'] = False
+
+        #-----------------------------------------------------------------------
+        # Test mock IPv6 server
+        #-----------------------------------------------------------------------
+        self.config['web']['interfaces'] = '127.0.0.1:7654 [::1]:7654'
+        with patch('scrapy_do.app.TCPServer') as mock_server:
+            self.service_maker._configure_web_server(config, controller)
+            mock_server.assert_called()
+        self.config['web']['interfaces'] = '127.0.0.1:7654'
 
     #---------------------------------------------------------------------------
     def test_service_maker(self):
