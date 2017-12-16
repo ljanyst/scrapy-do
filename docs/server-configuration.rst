@@ -30,9 +30,9 @@ parameters.
 ``[web]`` section
 -----------------
 
-* **interface**: An interface to listen on. Defaults to ``127.0.0.1``.
-
-* **port**: A port number to listen on. Defaults to: ``7654``.
+* **interfaces**: A whitespace-separated list of address-port pairs to listen
+  on. Use the RFC3986 notation to specify IPv6 addresses, i.e., ``[::1]:7654``.
+  Defaults to ``127.0.0.1:7654``.
 
 * **https**: The HTTPS switch. Defaults to ``off``.
 
@@ -67,12 +67,12 @@ Example configuration
        completed-cap = 250
 
        [web]
-       interface = 10.8.0.1
-       port = 9999
+       interfaces = 10.8.0.1:9999 [2001:db8::fa]:7654
 
        https = on
        key = /etc/scrapy-do/scrapy-do.key
        cert = /etc/scrapy-do/scrapy-do.crt
+       chain = /etc/scrapy-do/scrapy-do-chain.pem
 
        auth = on
        auth-db = /etc/scrapy-do/auth.db
