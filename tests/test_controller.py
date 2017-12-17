@@ -480,5 +480,34 @@ class ControllerTests(unittest.TestCase):
             self.assertFalse(os.path.exists(log_file))
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_remove_project(self):
+        controller = self.controller
+        yield controller.push_project('quotesbot', self.project_archive_data)
+        id1 = controller.schedule_job('quotesbot', 'toscrape-css',
+                                      'every second')
+        id2 = controller.schedule_job('quotesbot', 'toscrape-xpath',
+                                      'every second')
+
+        try:
+            controller.remove_project('foo')
+            self.fail('Removing a non-existent project risen an exception')
+        except KeyError as e:
+            self.assertTrue(str(e).startswith("'No such project"))
+
+        try:
+            controller.remove_project('quotesbot')
+            self.fail('Removing a project with scheduled spiders should have '
+                      'risen an exception')
+        except ValueError as e:
+            self.assertTrue(str(e).startswith('There are 2'))
+
+        yield controller.cancel_job(id1)
+        yield controller.cancel_job(id2)
+
+        controller.remove_project('quotesbot')
+        self.assertEqual(len(controller.projects), 0)
+
+    #---------------------------------------------------------------------------
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
