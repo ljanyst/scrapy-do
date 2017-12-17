@@ -546,3 +546,29 @@ class Controller(Service):
                 log_file = os.path.join(self.log_dir, job.identifier + log_type)
                 if os.path.exists(log_file):
                     os.remove(log_file)
+
+    #---------------------------------------------------------------------------
+    def remove_project(self, name):
+        """
+        Remove the project
+        """
+        #-----------------------------------------------------------------------
+        # Consistency checks
+        #-----------------------------------------------------------------------
+        if name not in self.projects:
+            raise KeyError('No such project: "{}"'.format(name))
+
+        sched_jobs = self.schedule.get_scheduled_jobs(name)
+        if len(sched_jobs) != 0:
+            msg = 'There are {} scheduled spiders for project "{}"'.format(
+                len(sched_jobs), name)
+            self.log.info('Failed to remove project "{}": {}'.format(
+                name, msg))
+            raise ValueError(msg)
+
+        #-----------------------------------------------------------------------
+        # Remove the project
+        #-----------------------------------------------------------------------
+        os.remove(self.projects[name].archive)
+        del self.projects[name]
+        self.log.info('Project "{}" removed'.format(name))
