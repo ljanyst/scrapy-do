@@ -261,6 +261,17 @@ class GetLog(resource.Resource):
 
 
 #-------------------------------------------------------------------------------
+class RemoveProject(JsonResource):
+
+    #---------------------------------------------------------------------------
+    def render_POST(self, request):
+        arg_require_all(request.args, [b'name'])
+        name = request.args[b'name'][0].decode('utf-8')
+        self.parent.controller.remove_project(name)
+        return {}
+
+
+#-------------------------------------------------------------------------------
 @implementer(IRealm)
 class PublicHTMLRealm:
 
