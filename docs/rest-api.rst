@@ -233,7 +233,7 @@ Query by id:
 Cancel a job.
 
 * Method: ``POST``
-* Parameters (one required):
+* Parameters:
 
   * ``id`` - id of the job to cancel
 
@@ -268,3 +268,25 @@ Get the log of the standard error output:
   .. code-block:: console
 
        $ curl -s http://localhost:7654/get-log/data/bf825a9e-b0c6-4c52-89f6-b5c8209e7977.err
+
+-----------------------
+``remove-project.json``
+-----------------------
+
+Remove a project.
+
+* Method: ``POST``
+* Parameters:
+
+  * ``name`` - name pf the project
+
+  .. code-block:: console
+
+       $ curl -s http://localhost:7654/remove-project.json \
+              -F name=quotesbot | jq -r
+
+  .. code-block:: JSON
+
+       {
+         "status": "ok"
+       }
