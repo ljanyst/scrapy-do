@@ -13,6 +13,8 @@ import shutil
 import os
 
 from scrapy_do.client.archive import build_project_archive
+from scrapy_do.client.webclient import request
+from unittest.mock import Mock, patch, DEFAULT
 
 
 #-------------------------------------------------------------------------------
@@ -61,3 +63,32 @@ class ClientTests(unittest.TestCase):
         # Clean up
         #-----------------------------------------------------------------------
         shutil.rmtree(temp_dir)
+
+    #---------------------------------------------------------------------------
+    def test_web_client(self):
+        with patch.multiple('requests', post=DEFAULT, get=DEFAULT) as mock:
+            #-------------------------------------------------------------------
+            # Correct and successful POST request
+            #-------------------------------------------------------------------
+            response = Mock()
+            response.status_code = 200
+            mock['post'].return_value = response
+            request('POST', 'foo', ssl_verify=False)
+
+            #-------------------------------------------------------------------
+            # Incorrect GET request
+            #-------------------------------------------------------------------
+            mock['get'].side_effect = Exception('Request failed')
+            with self.assertRaises(Exception):
+                request('GET', 'foo')
+
+            #-------------------------------------------------------------------
+            # Correct but failed POST request
+            #-------------------------------------------------------------------
+            mock['post'].reset()
+            response = Mock()
+            response.status_code = 400
+            response.json.side_effect = {'msg': 'foo'}
+            mock['post'].return_value = response
+            with self.assertRaises(Exception):
+                request('POST', 'foo')
