@@ -24,6 +24,7 @@ def request(method, url, payload={}, auth=None, ssl_verify=True):
     :param ssl_verify:                        SSL verification flag
     :raises scrapy_do.client.ClientException: an error
     :return:                                  parsed JSON response of the server
+                                              or raw data
     """
     assert method == 'POST' or method == 'GET'
 
@@ -38,7 +39,14 @@ def request(method, url, payload={}, auth=None, ssl_verify=True):
     except Exception as e:
         raise ClientException(str(e))
 
-    data = r.json()
+    if r.headers['Content-Type'] == 'application/json':
+        data = r.json()
+    else:
+        data = r.text
+
     if r.status_code != 200:
-        raise ClientException(data['msg'])
+        if r.headers['Content-Type'] == 'application/json':
+            raise ClientException(data['msg'])
+        else:
+            raise ClientException(data)
     return data
