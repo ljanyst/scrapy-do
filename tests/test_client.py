@@ -72,6 +72,7 @@ class ClientTests(unittest.TestCase):
             #-------------------------------------------------------------------
             response = Mock()
             response.status_code = 200
+            response.headers = {'Content-Type': 'application/json'}
             mock['post'].return_value = response
             request('POST', 'foo', ssl_verify=False)
 
@@ -88,7 +89,31 @@ class ClientTests(unittest.TestCase):
             mock['post'].reset()
             response = Mock()
             response.status_code = 400
+            response.headers = {'Content-Type': 'application/json'}
             response.json.side_effect = {'msg': 'foo'}
+            mock['post'].return_value = response
+            with self.assertRaises(Exception):
+                request('POST', 'foo')
+
+            #-------------------------------------------------------------------
+            # Correct text POST
+            #-------------------------------------------------------------------
+            mock['post'].reset()
+            response = Mock()
+            response.status_code = 200
+            response.text.side_effect = 'foo'
+            response.headers = {'Content-Type': 'plain/text'}
+            mock['post'].return_value = response
+            request('POST', 'foo')
+
+            #-------------------------------------------------------------------
+            # Correct but failed text POST
+            #-------------------------------------------------------------------
+            mock['post'].reset()
+            response = Mock()
+            response.status_code = 400
+            response.text.side_effect = 'foo'
+            response.headers = {'Content-Type': 'plain/text'}
             mock['post'].return_value = response
             with self.assertRaises(Exception):
                 request('POST', 'foo')
