@@ -34,6 +34,6 @@ setup(
     ],
     install_requires = [
         'scrapy', 'twisted', 'pyOpenSSL', 'psutil', 'python-dateutil',
-        'schedule', 'pem'
+        'schedule', 'pem', 'tabulate', 'requests'
     ]
 )
