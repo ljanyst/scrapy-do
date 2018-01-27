@@ -263,6 +263,32 @@ cancel_job_cmd = Command(
 
 
 #-------------------------------------------------------------------------------
+# Remove project
+#-------------------------------------------------------------------------------
+def remove_project_arg_setup(subparsers):
+    parser = subparsers.add_parser('remove-project', help='Remove a project')
+    parser.set_defaults(command='remove-project')
+    parser.add_argument('--name', type=str, default=None,
+                        help='project name')
+
+
+def remove_project_arg_process(args):
+    if args.name is None:
+        print('[!] You need to specify the project name.')
+        sys.exit(1)
+    return {'name': args.name}
+
+
+def remove_project_rsp_parse(rsp):
+    return 'Removed.'
+
+
+remove_project_cmd = Command(
+    remove_project_arg_setup, remove_project_arg_process,
+    url_append('/remove-project.json'), remove_project_rsp_parse, 'POST')
+
+
+#-------------------------------------------------------------------------------
 # List of commands
 #-------------------------------------------------------------------------------
 commands = {
@@ -273,5 +299,6 @@ commands = {
     'get-log': get_log_cmd,
     'push-project': push_project_cmd,
     'schedule-job': schedule_job_cmd,
-    'cancel-job': cancel_job_cmd
+    'cancel-job': cancel_job_cmd,
+    'remove-project': remove_project_cmd
 }
