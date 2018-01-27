@@ -104,7 +104,7 @@ class ClientTests(unittest.TestCase):
             response.text.side_effect = 'foo'
             response.headers = {'Content-Type': 'plain/text'}
             mock['post'].return_value = response
-            request('POST', 'foo')
+            request('POST', 'foo', auth=('test', 'test'))
 
             #-------------------------------------------------------------------
             # Correct but failed text POST
