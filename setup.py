@@ -13,7 +13,7 @@ setup(
     description = 'A Spider Runner for Scrapy',
     long_description = long_description,
     license = 'BSD License',
-    packages = ['scrapy_do'],
+    packages = ['scrapy_do', 'scrapy_do.client'],
     include_package_data = True,
     package_data={
         '': ['*.conf'],
