@@ -7,6 +7,7 @@
 
 import configparser
 import unittest
+import argparse
 import tempfile
 import zipfile
 import shutil
@@ -15,6 +16,8 @@ import os
 from scrapy_do.client.archive import build_project_archive
 from scrapy_do.client.webclient import request
 from unittest.mock import Mock, patch, DEFAULT
+
+import scrapy_do.client.commands as cmd
 
 
 #-------------------------------------------------------------------------------
@@ -117,3 +120,198 @@ class ClientTests(unittest.TestCase):
             mock['post'].return_value = response
             with self.assertRaises(Exception):
                 request('POST', 'foo')
+
+    #---------------------------------------------------------------------------
+    def test_url_setup(self):
+        #-----------------------------------------------------------------------
+        # URL append
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.url = '/foo'
+        append = cmd.url_append('/bar')
+        result = append(args)
+        self.assertEqual(result, '/foo/bar')
+
+        #-----------------------------------------------------------------------
+        # Get log
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.url = '/foo'
+        args.job_id = 'bar'
+        args.log_type = 'out'
+        result = cmd.get_log_url_setup(args)
+        self.assertEqual(result, '/foo/get-log/data/bar.out')
+
+        args.job_id = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.get_log_url_setup(args)
+                exit.assert_called_once()
+
+    #---------------------------------------------------------------------------
+    def test_arg_setup(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(help='Commands')
+        cmd.status_arg_setup(subparsers)
+        cmd.list_projects_arg_setup(subparsers)
+        cmd.list_spiders_arg_setup(subparsers)
+        cmd.list_jobs_arg_setup(subparsers)
+        cmd.get_log_arg_setup(subparsers)
+        cmd.push_project_arg_setup(subparsers)
+        cmd.schedule_job_arg_setup(subparsers)
+        cmd.cancel_job_arg_setup(subparsers)
+
+    #---------------------------------------------------------------------------
+    def test_arg_process(self):
+        #-----------------------------------------------------------------------
+        # List spiders
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.project = 'foo'
+        payload = cmd.list_spiders_arg_process(args)
+        self.assertIn('project', payload)
+        self.assertEqual(payload['project'], 'foo')
+
+        args.project = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.list_spiders_arg_process(args)
+                exit.assert_called_once()
+
+        #-----------------------------------------------------------------------
+        # List jobs
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.status = 'foo'
+        payload = cmd.list_jobs_arg_process(args)
+        self.assertIn('status', payload)
+        self.assertEqual(payload['status'], 'foo')
+
+        #-----------------------------------------------------------------------
+        # Push project
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.project_path = '.'
+        with patch('scrapy_do.client.commands.build_project_archive') as bpa:
+            bpa.return_value = ('foo', 'bar')
+            payload = cmd.push_project_arg_process(args)
+        self.assertIn('name', payload)
+        self.assertIn('archive', payload)
+        self.assertEqual(payload['name'], 'foo')
+        self.assertEqual(payload['archive'], 'bar')
+        args.project_path = '/'
+        with patch('scrapy_do.client.commands.build_project_archive') as bpa:
+            bpa.return_value = ('foo', 'bar')
+            payload = cmd.push_project_arg_process(args)
+
+        #-----------------------------------------------------------------------
+        # Schedule job
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.project = 'foo'
+        args.spider = 'bar'
+        args.when = 'now'
+        payload = cmd.schedule_job_arg_process(args)
+        self.assertIn('project', payload)
+        self.assertIn('spider', payload)
+        self.assertIn('when', payload)
+        self.assertEqual(payload['project'], 'foo')
+        self.assertEqual(payload['spider'], 'bar')
+        self.assertEqual(payload['when'], 'now')
+
+        args.project = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.schedule_job_arg_process(args)
+                exit.assert_called_once()
+
+        args.project = 'foo'
+        args.spider = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.schedule_job_arg_process(args)
+                exit.assert_called_once()
+
+        #-----------------------------------------------------------------------
+        # Cancel Job
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.job_id = 'foo'
+        payload = cmd.cancel_job_arg_process(args)
+        self.assertIn('id', payload)
+        self.assertEqual(payload['id'], 'foo')
+
+        args.job_id = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.cancel_job_arg_process(args)
+                exit.assert_called_once()
+
+    #---------------------------------------------------------------------------
+    def test_rsp_parse(self):
+        #-----------------------------------------------------------------------
+        # Status
+        #-----------------------------------------------------------------------
+        rsp = {'foo1': 'bar1', 'foo2': 'bar2'}
+        ret = cmd.status_rsp_parse(rsp)
+        self.assertIn('key', ret['headers'])
+        self.assertIn('value', ret['headers'])
+        self.assertIn(['foo1', 'bar1'], ret['data'])
+        self.assertIn(['foo2', 'bar2'], ret['data'])
+
+        #-----------------------------------------------------------------------
+        # List projects
+        #-----------------------------------------------------------------------
+        rsp = {'projects': ['prj1', 'prj2']}
+        ret = cmd.list_projects_rsp_parse(rsp)
+        self.assertIn('name', ret['headers'])
+        self.assertIn(['prj1'], ret['data'])
+        self.assertIn(['prj2'], ret['data'])
+
+        #-----------------------------------------------------------------------
+        # List spiders
+        #-----------------------------------------------------------------------
+        rsp = {'spiders': ['spider1', 'spider2']}
+        ret = cmd.list_spiders_rsp_parse(rsp)
+        self.assertIn('name', ret['headers'])
+        self.assertIn(['spider1'], ret['data'])
+        self.assertIn(['spider2'], ret['data'])
+
+        #-----------------------------------------------------------------------
+        # List jobs
+        #-----------------------------------------------------------------------
+        rsp = {'jobs': [{
+            'identifier': 'foo',
+            'project': 'foo',
+            'spider': 'foo',
+            'status': 'foo',
+            'schedule': 'foo',
+            'actor': 'foo',
+            'timestamp': 'foo',
+            'duration': 'foo'
+        }]}
+        ret = cmd.list_jobs_rsp_parse(rsp)
+        self.assertIn(['foo'] * 8, ret['data'])
+
+        #-----------------------------------------------------------------------
+        # Push project
+        #-----------------------------------------------------------------------
+        rsp = {'spiders': ['spider1', 'spider2']}
+        ret = cmd.push_project_rsp_parse(rsp)
+        self.assertIn('spiders', ret['headers'])
+        self.assertIn(['spider1'], ret['data'])
+        self.assertIn(['spider2'], ret['data'])
+
+        #-----------------------------------------------------------------------
+        # Schedule job
+        #-----------------------------------------------------------------------
+        rsp = {'identifier': 'foo'}
+        ret = cmd.schedule_job_rsp_parse(rsp)
+        self.assertIn('identifier', ret['headers'])
+        self.assertIn(['foo'], ret['data'])
+
+        #-----------------------------------------------------------------------
+        # Cancel job
+        #-----------------------------------------------------------------------
+        ret = cmd.cancel_job_rsp_parse(rsp)
+        self.assertEqual(ret, 'Canceled.')
