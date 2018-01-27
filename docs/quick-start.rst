@@ -14,79 +14,58 @@ Quick Start
 
        $ scrapy-do -n scrapy-do
 
-* Open another terminal window, download the Scrapy's Quotesbot example and
-  create a deployable archive:
+* Open another terminal window and store the server's URL in the client's
+  configuration file so that you don't have to type it all the time:
+
+  .. code-block:: console
+
+       $ cat > ~/.scrapy-do.cfg << EOF
+       > [scrapy-do]
+       > url=http://localhost:7654
+       > EOF
+
+
+* Download the Scrapy's Quotesbot example and push the code to the server:
 
   .. code-block:: console
 
        $ git clone https://github.com/scrapy/quotesbot.git
        $ cd quotesbot
-       $ git archive master -o quotesbot.zip --prefix=quotesbot/
-
-* Push the code to the server:
-
-  .. code-block:: console
-
-       $ curl -s http://localhost:7654/push-project.json \
-              -F name=quotesbot \
-              -F archive=@quotesbot.zip | jq -r
-       {
-         "status": "ok",
-         "spiders": [
-           "toscrape-css",
-           "toscrape-xpath"
-         ]
-       }
+       $ scrapy-do-cl push-project
+       +----------------+
+       | spiders        |
+       |----------------|
+       | toscrape-css   |
+       | toscrape-xpath |
+       +----------------+
 
 * Schedule some jobs:
 
   .. code-block:: console
 
-       $ curl -s http://localhost:7654/schedule-job.json \
-              -F project=quotesbot \
-              -F spider=toscrape-css \
-              -F "when=every 2 to 3 hours" | jq -r
-       {
-         "status": "ok",
-         "identifier": "04a38a03-1ce4-4077-aee1-e8275d1c20b6"
-       }
+       $ scrapy-do-cl schedule-job --project quotesbot \
+           --spider toscrape-css --when 'every 5 to 15 minutes'
+       +--------------------------------------+
+       | identifier                           |
+       |--------------------------------------|
+       | 0a3db618-d8e1-48dc-a557-4e8d705d599c |
+       +--------------------------------------+
 
-       $ curl -s http://localhost:7654/schedule-job.json \
-              -F project=quotesbot \
-              -F spider=toscrape-css \
-              -F when=now | jq -r
-       {
-         "status": "ok",
-         "identifier": "83d447b0-ba6e-42c5-a80f-6982b2e860cf"
-       }
+       $ scrapy-do-cl schedule-job --project quotesbot --spider toscrape-css
+       +--------------------------------------+
+       | identifier                           |
+       |--------------------------------------|
+       | b3a61347-92ef-4095-bb68-0702270a52b8 |
+       +--------------------------------------+
 
 * See what's going on:
 
   .. code-block:: console
 
-       $ curl -s "http://localhost:7654/list-jobs.json?status=ACTIVE" | jq -r
-       {
-         "status": "ok",
-         "jobs": [
-           {
-             "identifier": "83d447b0-ba6e-42c5-a80f-6982b2e860cf",
-             "status": "RUNNING",
-             "actor": "USER",
-             "schedule": "now",
-             "project": "quotesbot",
-             "spider": "toscrape-css",
-             "timestamp": "2017-12-10 22:33:14.853565",
-             "duration": null
-           },
-           {
-             "identifier": "04a38a03-1ce4-4077-aee1-e8275d1c20b6",
-             "status": "SCHEDULED",
-             "actor": "USER",
-             "schedule": "every 2 to 3 hours",
-             "project": "quotesbot",
-             "spider": "toscrape-css",
-             "timestamp": "2017-12-10 22:31:12.320832",
-             "duration": null
-           }
-         ]
-       }
+       $ scrapy-do-cl list-jobs
+       +--------------------------------------+-----------+--------------+-----------+-----------------------+---------+----------------------------+------------+
+       | identifier                           | project   | spider       | status    | schedule              | actor   | timestamp                  | duration   |
+       |--------------------------------------+-----------+--------------+-----------+-----------------------+---------+----------------------------+------------|
+       | b3a61347-92ef-4095-bb68-0702270a52b8 | quotesbot | toscrape-css | RUNNING   | now                   | USER    | 2018-01-27 08:32:19.781720 |            |
+       | 0a3db618-d8e1-48dc-a557-4e8d705d599c | quotesbot | toscrape-css | SCHEDULED | every 5 to 15 minutes | USER    | 2018-01-27 08:29:24.749770 |            |
+       +--------------------------------------+-----------+--------------+-----------+-----------------------+---------+----------------------------+------------+
