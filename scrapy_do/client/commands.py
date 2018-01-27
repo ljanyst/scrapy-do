@@ -109,9 +109,13 @@ def list_jobs_arg_setup(subparsers):
                         choices=['ACTIVE', 'COMPLETED', 'SCHEDULED', 'PENDING',
                                  'RUNNING', 'CANCELED', 'SUCCESSFUL', 'FAILED'],
                         help='job status of the jobs to list')
+    parser.add_argument('--job-id', type=str, default=None,
+                        help='ID of the job to list')
 
 
 def list_jobs_arg_process(args):
+    if args.job_id is not None:
+        return {'id': args.job_id}
     return {'status': args.status}
 
 
