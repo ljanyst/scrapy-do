@@ -160,6 +160,7 @@ class ClientTests(unittest.TestCase):
         cmd.push_project_arg_setup(subparsers)
         cmd.schedule_job_arg_setup(subparsers)
         cmd.cancel_job_arg_setup(subparsers)
+        cmd.remove_project_arg_setup(subparsers)
 
     #---------------------------------------------------------------------------
     def test_arg_process(self):
@@ -252,6 +253,21 @@ class ClientTests(unittest.TestCase):
                 cmd.cancel_job_arg_process(args)
                 exit.assert_called_once()
 
+        #-----------------------------------------------------------------------
+        # Remove project
+        #-----------------------------------------------------------------------
+        args = Mock()
+        args.name = 'foo'
+        payload = cmd.remove_project_arg_process(args)
+        self.assertIn('name', payload)
+        self.assertEqual(payload['name'], 'foo')
+
+        args.name = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.remove_project_arg_process(args)
+                exit.assert_called_once()
+
     #---------------------------------------------------------------------------
     def test_rsp_parse(self):
         #-----------------------------------------------------------------------
@@ -320,3 +336,9 @@ class ClientTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         ret = cmd.cancel_job_rsp_parse(rsp)
         self.assertEqual(ret, 'Canceled.')
+
+        #-----------------------------------------------------------------------
+        # Remove project
+        #-----------------------------------------------------------------------
+        ret = cmd.remove_project_rsp_parse(rsp)
+        self.assertEqual(ret, 'Removed.')
