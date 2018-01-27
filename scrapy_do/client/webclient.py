@@ -9,6 +9,7 @@ import requests
 import urllib3
 
 from scrapy_do.client import ClientException
+from requests.auth import HTTPDigestAuth
 
 
 #-------------------------------------------------------------------------------
@@ -30,6 +31,9 @@ def request(method, url, payload={}, auth=None, ssl_verify=True):
 
     if not ssl_verify:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    if auth is not None:
+        auth = HTTPDigestAuth(*auth)
 
     try:
         if method == 'POST':
