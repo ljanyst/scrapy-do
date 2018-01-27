@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+#-------------------------------------------------------------------------------
+# Author: Lukasz Janyst <lukasz@jany.st>
+# Date:   24.01.2018
+#
+# Licensed under the 3-Clause BSD License, see the LICENSE file for details.
+#-------------------------------------------------------------------------------
+
+import configparser
+import argparse
+import sys
+import os
+
+from scrapy_do.client.webclient import request
+from scrapy_do.client.commands import commands
+from scrapy_do.client import ClientException
+from collections import defaultdict
+from tabulate import tabulate
+from getpass import getpass
+
+
+#-------------------------------------------------------------------------------
+# Print the response
+#-------------------------------------------------------------------------------
+def print_response(rsp, fmt):
+    if isinstance(rsp, str):
+        print(rsp)
+        return
+
+    if not rsp['data']:
+        print('[i] No data to show.')
+        return
+    print(tabulate(rsp['data'], headers=rsp['headers'], tablefmt=fmt))
+
+
+#-------------------------------------------------------------------------------
+def str2bool(v):
+    """
+    Convert a string to a boolean
+    """
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+#-------------------------------------------------------------------------------
+# Read a config file to supply default parameters
+#-------------------------------------------------------------------------------
+def arg_setup(parser):
+    #---------------------------------------------------------------------------
+    # Read the params from the config file
+    #---------------------------------------------------------------------------
+    config = configparser.ConfigParser()
+    config.read(os.path.expanduser('~/.scrapy-do.cfg'))
+    param_names = ['url', 'username', 'password', 'print-format']
+    params = defaultdict(lambda: None)
+
+    for pn in param_names:
+        try:
+            params[pn] = config.get('scrapy-do', pn)
+        except (configparser.NoSectionError, configparser.NoOptionError):
+            pass
+
+    #---------------------------------------------------------------------------
+    # Set the defaults up if not specified in config
+    #---------------------------------------------------------------------------
+    if params['print-format'] is None:
+        params['print-format'] = 'psql'
+
+    #---------------------------------------------------------------------------
+    # Set up the arguments
+    #---------------------------------------------------------------------------
+    parser.add_argument('--url', type=str, default=params['url'],
+                        help='server URL')
+    parser.add_argument('--username', type=str, default=params['username'],
+                        help='user name')
+    parser.add_argument('--password', type=str, default=params['password'],
+                        help='password')
+    parser.add_argument('--print-format', type=str,
+                        default=params['print-format'],
+                        choices=['simple', 'grid', 'fancy_grid', 'presto',
+                                 'psql', 'pipe', 'orgtbl', 'jira', 'rst',
+                                 'mediawiki', 'html', 'latex'],
+                        help='print format')
+    parser.add_argument('--verify-ssl', type=str2bool, default=True,
+                        help='verify SSL')
+
+
+#-------------------------------------------------------------------------------
+# Main
+#-------------------------------------------------------------------------------
+def main():
+    #---------------------------------------------------------------------------
+    # Set up the commandline parsers
+    #---------------------------------------------------------------------------
+    parser = argparse.ArgumentParser()
+    arg_setup(parser)
+    subparsers = parser.add_subparsers(help='Commands')
+    for key, command in commands.items() :
+        command.arg_setup(subparsers)
+
+    args = parser.parse_args()
+
+    if not 'command' in args:
+        print('[!] You need to specify a command to run.')
+        sys.exit(1)
+
+    if args.url is None:
+        print('[!] You need to specify the server URL.')
+        sys.exit(1)
+
+    auth = None
+    password = args.password
+    if args.username is not None and password is None:
+        password = getpass()
+
+    if args.username is not None:
+        auth = (args.username, password)
+
+    #---------------------------------------------------------------------------
+    # Make a request
+    #---------------------------------------------------------------------------
+    command = commands[args.command]
+    payload = command.arg_process(args)
+    try:
+        rsp = request(command.method, command.url_setup(args), payload,
+                      auth, args.verify_ssl)
+    except ClientException as e:
+        print('[!] Server responded with an error:', e)
+        sys.exit(1)
+
+    #---------------------------------------------------------------------------
+    # Parse and print the response
+    #---------------------------------------------------------------------------
+    rsp = command.response_parse(rsp)
+    print_response(rsp, args.print_format)
+
+#-------------------------------------------------------------------------------
+# Run the show
+#-------------------------------------------------------------------------------
+if __name__ == '__main__':
+    main()
