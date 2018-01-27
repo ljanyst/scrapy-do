@@ -183,9 +183,14 @@ class ClientTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         args = Mock()
         args.status = 'foo'
+        args.job_id = None
         payload = cmd.list_jobs_arg_process(args)
         self.assertIn('status', payload)
         self.assertEqual(payload['status'], 'foo')
+        args.job_id = 'foo'
+        payload = cmd.list_jobs_arg_process(args)
+        self.assertIn('id', payload)
+        self.assertEqual(payload['id'], 'foo')
 
         #-----------------------------------------------------------------------
         # Push project
