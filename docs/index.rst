@@ -24,6 +24,7 @@ Contents
    basic-concepts
    installation
    server-configuration
+   commandline-client
    rest-api
    source-docs
 
