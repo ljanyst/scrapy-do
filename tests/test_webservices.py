@@ -15,7 +15,7 @@ from scrapy_do.controller import Project
 from twisted.web.server import NOT_DONE_YET
 from scrapy_do.schedule import Job, Actor
 from scrapy_do.schedule import Status as JobStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from twisted.trial import unittest
 from datetime import datetime
 
@@ -396,10 +396,13 @@ class WebServicesTests(unittest.TestCase):
         config.get_options.return_value = []
         controller = Mock()
         request = Mock()
-        web_app = WebApp(config, controller)
+        with patch('scrapy_do.webservice.get_data') as get_data:
+            get_data.return_value = b'{"foo": "bar"}'
+            web_app = WebApp(config, controller)
         request.uri = b'/foo'
         index = web_app.getChild(None, request)
         self.assertEqual(index, web_app.index)
         request.uri = b'/favicon.ico'
-        index = web_app.getChild(None, request)
-        self.assertNotEqual(index, web_app.index)
+        favicon = web_app.getChild(None, request)
+        self.assertNotEqual(favicon, web_app.index)
+        self.assertEqual(favicon.render_GET(request), b'{"foo": "bar"}')
