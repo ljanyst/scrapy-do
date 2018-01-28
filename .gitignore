@@ -16,3 +16,8 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 scrapy_do/ui
+
+docs/_build/
+docs/modules.rst
+docs/scrapy_do.client.rst
+docs/scrapy_do.rst
