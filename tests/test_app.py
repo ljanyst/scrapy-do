@@ -211,9 +211,7 @@ class AppNoAuthTest(AppTestBase):
     def test_app(self):
         response = yield web_retrieve_async('GET', 'http://127.0.0.1:7654')
         resp = response[0]
-        body = response[1]
         self.assertEqual(resp.code, 200)
-        self.assertEqual(body.decode('utf-8'), '<html>Hello, world!</html>')
 
     #---------------------------------------------------------------------------
     def tearDown(self):
@@ -233,9 +231,7 @@ class AppAuthTest(AppTestBase):
         response = yield web_retrieve_async('GET', 'http://127.0.0.1:7654',
                                             username='foo', password='bar')
         resp = response[0]
-        body = response[1]
         self.assertEqual(resp.code, 200)
-        self.assertEqual(body.decode('utf-8'), '<html>Hello, world!</html>')
 
     #---------------------------------------------------------------------------
     def test_realm(self):
