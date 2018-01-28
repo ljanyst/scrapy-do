@@ -37,9 +37,7 @@ class WebApp(resource.Resource):
         super(WebApp, self).__init__()
         self.config = config
         self.controller = controller
-        self.index = UIResource('ui/index.html')
         self.children = {}
-        self.putChild(b'', self.index)
 
         #-----------------------------------------------------------------------
         # Register web modules
@@ -53,13 +51,23 @@ class WebApp(resource.Resource):
         #-----------------------------------------------------------------------
         # Register UI modules
         #-----------------------------------------------------------------------
-        for child in ['/favicon.ico', '/manifest.json']:
-            self.register_child(child, UIResource('ui' + child))
+        assets = None
+        try:
+            assets = get_data(__package__, 'ui/asset-manifest.json')
+            assets = assets.decode('utf-8')
+        except FileNotFoundError:
+            self.index = self
 
-        assets = get_data(__package__, 'ui/asset-manifest.json').decode('utf-8')
-        assets = json.loads(assets)
-        for _, asset in assets.items():
-            self.register_child('/' + asset, UIResource('ui/' + asset))
+        if assets is not None:
+            self.index = UIResource('ui/index.html')
+            self.putChild(b'', self.index)
+
+            for child in ['/favicon.ico', '/manifest.json']:
+                self.register_child(child, UIResource('ui' + child))
+
+            assets = json.loads(assets)
+            for _, asset in assets.items():
+                self.register_child('/' + asset, UIResource('ui/' + asset))
 
     #---------------------------------------------------------------------------
     def register_child(self, key, resource):
@@ -71,6 +79,13 @@ class WebApp(resource.Resource):
         if request.uri in self.children:
             return self.children[request.uri]
         return self.index
+
+    #---------------------------------------------------------------------------
+    def render_GET(self, request):
+        data = b'The UI files have not been built.'
+        request.setHeader('Content-Type', 'text/plain')
+        request.setHeader('Content-Length', len(data))
+        return data
 
 
 #-------------------------------------------------------------------------------
