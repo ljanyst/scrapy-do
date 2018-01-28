@@ -10,6 +10,7 @@ import json
 from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.webservice import Status, PushProject, ListProjects, ListSpiders
 from scrapy_do.webservice import ScheduleJob, ListJobs, CancelJob, RemoveProject
+from scrapy_do.webservice import WebApp
 from scrapy_do.controller import Project
 from twisted.web.server import NOT_DONE_YET
 from scrapy_do.schedule import Job, Actor
@@ -388,3 +389,17 @@ class WebServicesTests(unittest.TestCase):
         decoded = json.loads(data)
         self.assertIn('status', decoded)
         self.assertEqual(decoded['status'], 'ok')
+
+    #---------------------------------------------------------------------------
+    def test_web_app(self):
+        config = Mock()
+        config.get_options.return_value = []
+        controller = Mock()
+        request = Mock()
+        web_app = WebApp(config, controller)
+        request.uri = b'/foo'
+        index = web_app.getChild(None, request)
+        self.assertEqual(index, web_app.index)
+        request.uri = b'/favicon.ico'
+        index = web_app.getChild(None, request)
+        self.assertNotEqual(index, web_app.index)
