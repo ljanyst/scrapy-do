@@ -2,6 +2,11 @@ sudo: false
 language: python
 python:
     - "3.6"
+
+before_install:
+  - nvm install 8.9.3
+  - nvm use 8.9.3
+
 install: pip install tox-travis coveralls
 script:
     - tox
