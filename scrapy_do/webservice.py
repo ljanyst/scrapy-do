@@ -10,6 +10,7 @@ import json
 import time
 import psutil
 import socket
+import mimetypes
 
 from dateutil.relativedelta import relativedelta
 from twisted.internet.defer import inlineCallbacks
@@ -25,34 +26,71 @@ from twisted.web import resource
 from .schedule import Status as JobStatus
 from scrapy_do import __version__
 from datetime import datetime
+from pkgutil import get_data
 from .utils import arg_require_all, arg_require_any, pprint_relativedelta
 
 
 #-------------------------------------------------------------------------------
 class WebApp(resource.Resource):
-
     #---------------------------------------------------------------------------
     def __init__(self, config, controller):
         super(WebApp, self).__init__()
         self.config = config
         self.controller = controller
-        self.putChild(b'', Home())
+        self.index = UIResource('ui/index.html')
+        self.children = {}
+        self.putChild(b'', self.index)
 
+        #-----------------------------------------------------------------------
+        # Register web modules
+        #-----------------------------------------------------------------------
         web_modules = config.get_options('web-modules')
 
         for mod_name, mod_class_name in web_modules:
             mod_class = get_object(mod_class_name)
             self.putChild(mod_name.encode('utf-8'), mod_class(self))
 
+        #-----------------------------------------------------------------------
+        # Register UI modules
+        #-----------------------------------------------------------------------
+        for child in ['/favicon.ico', '/manifest.json']:
+            self.register_child(child, UIResource('ui' + child))
+
+        assets = get_data(__package__, 'ui/asset-manifest.json').decode('utf-8')
+        assets = json.loads(assets)
+        for _, asset in assets.items():
+            self.register_child('/' + asset, UIResource('ui/' + asset))
+
+    #---------------------------------------------------------------------------
+    def register_child(self, key, resource):
+        key = key.encode('utf-8')
+        self.children[key] = resource
+
+    #---------------------------------------------------------------------------
+    def getChild(self, name, request):
+        if request.uri in self.children:
+            return self.children[request.uri]
+        return self.index
+
 
 #-------------------------------------------------------------------------------
-class Home(resource.Resource):
+class UIResource(resource.Resource):
 
     isLeaf = True
 
     #---------------------------------------------------------------------------
+    def __init__(self, name):
+        super(UIResource, self).__init__()
+        self.name = name
+        self.data = get_data(__package__, name)
+        mimetype = mimetypes.guess_type(self.name)[0]
+        self.mimetype = mimetype if mimetype else 'text/plain'
+
+    #---------------------------------------------------------------------------
     def render_GET(self, request):
-        return "<html>Hello, world!</html>".encode('utf-8')
+        request.setHeader('Content-Type', self.mimetype)
+        request.setHeader('Content-Length', len(self.data))
+        return self.data
 
 
 #-------------------------------------------------------------------------------
