@@ -75,7 +75,7 @@ class build_ui(build_py):
             #-------------------------------------------------------------------
             artefacts = [
                 'asset-manifest.json',
-                'favicon.ico',
+                'favicon.png',
                 'index.html',
                 'manifest.json',
                 'service-worker.js'
