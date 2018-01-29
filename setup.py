@@ -114,7 +114,7 @@ setup(
     author = 'Lukasz Janyst',
     author_email = 'xyz@jany.st',
     url = 'https://jany.st/scrapy-do.html',
-    description = 'A Spider Runner for Scrapy',
+    description = 'A daemon for scheduling Scrapy spiders',
     long_description = long_description,
     license = 'BSD License',
     packages = ['scrapy_do', 'scrapy_do.client'],
