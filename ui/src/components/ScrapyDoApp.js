@@ -7,11 +7,13 @@
 
 import React, { Component } from 'react';
 
+import ScrapyDoNav from './ScrapyDoNav';
+
 class ScrapyDoApp extends Component {
   render() {
     return (
       <div>
-        Hello, World!
+         <ScrapyDoNav />
       </div>
     );
   }
