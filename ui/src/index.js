@@ -8,9 +8,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import 'bootstrap/dist/css/bootstrap.css';
+import 'bootstrap/dist/css/bootstrap-theme.css';
 import './index.css';
-import ScrapyDoApp from './components/ScrapyDoApp';
 import registerServiceWorker from './registerServiceWorker';
+import { BrowserRouter } from 'react-router-dom';
 
-ReactDOM.render(<ScrapyDoApp />, document.getElementById('root'));
+import ScrapyDoApp from './components/ScrapyDoApp';
+
+ReactDOM.render(
+  <BrowserRouter>
+    <ScrapyDoApp />
+  </BrowserRouter>,
+  document.getElementById('root'));
 registerServiceWorker();
