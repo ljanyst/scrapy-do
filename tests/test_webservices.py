@@ -402,7 +402,7 @@ class WebServicesTests(unittest.TestCase):
         request.uri = b'/foo'
         index = web_app.getChild(None, request)
         self.assertEqual(index, web_app.index)
-        request.uri = b'/favicon.ico'
+        request.uri = b'/favicon.png'
         favicon = web_app.getChild(None, request)
         self.assertNotEqual(favicon, web_app.index)
         self.assertEqual(favicon.render_GET(request), b'{"foo": "bar"}')
