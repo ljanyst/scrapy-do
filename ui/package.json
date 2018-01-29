@@ -4,7 +4,9 @@
   "private": true,
   "homepage": "/",
   "dependencies": {
+    "bootstrap": "^4.0.0",
     "react": "^16.2.0",
+    "react-bootstrap": "^0.32.1",
     "react-dom": "^16.2.0",
     "react-scripts": "1.1.0"
   },
