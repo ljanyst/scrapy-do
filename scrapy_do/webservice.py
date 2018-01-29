@@ -62,7 +62,7 @@ class WebApp(resource.Resource):
             self.index = UIResource('ui/index.html')
             self.putChild(b'', self.index)
 
-            for child in ['/favicon.ico', '/manifest.json']:
+            for child in ['/favicon.png', '/manifest.json']:
                 self.register_child(child, UIResource('ui' + child))
 
             assets = json.loads(assets)
