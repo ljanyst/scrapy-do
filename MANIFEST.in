@@ -1,7 +1,5 @@
 include LICENSE
 include requirements-dev.txt
 include ui/package.json
-include ui/public/favicon.ico
-include ui/public/index.html
-include ui/public/manifest.json
-recursive-include ui/src *.css *.js *.svg
+recursive-include ui/public *.png *.html *.json
+recursive-include ui/src *.css *.js *.svg *.png
