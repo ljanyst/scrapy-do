@@ -35,13 +35,13 @@ class ScrapyDoNav extends Component {
               <NavItem><Glyphicon glyph='dashboard'/> Dashboard</NavItem>
             </LinkContainer>
 
-            <LinkContainer to="/projects">
+            <LinkContainer to="/project-list">
               <NavItem><Glyphicon glyph='compressed'/> Projects</NavItem>
             </LinkContainer>
-            <LinkContainer to="/jobs-active">
+            <LinkContainer to="/job-list/active">
               <NavItem><Glyphicon glyph='flash'/> Active Jobs</NavItem>
             </LinkContainer>
-            <LinkContainer to="/jobs-completed">
+            <LinkContainer to="/job-list/completed">
               <NavItem><Glyphicon glyph='check'/> Completed Jobs</NavItem>
             </LinkContainer>
           </Nav>
