@@ -124,6 +124,7 @@ class JsonResource(resource.Resource):
         json_data = json_data.encode('utf-8')
         request.setHeader('Content-Type', 'application/json')
         request.setHeader('Content-Length', len(json_data))
+        request.setHeader('Access-Control-Allow-Origin', '*')
         return json_data
 
     #---------------------------------------------------------------------------
