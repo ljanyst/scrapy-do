@@ -14,9 +14,18 @@ const url =
       : 'http://localhost:7654';
 
 //------------------------------------------------------------------------------
+// Fetch the response or throw an error if the response is not successful
+//------------------------------------------------------------------------------
+const responseHandler = (response) => {
+  if(!response.ok)
+    throw Error(response.error);
+  return response.json();
+};
+
+//------------------------------------------------------------------------------
 // Get service status
 //------------------------------------------------------------------------------
 export function getStatus() {
   return fetch(`${url}/status.json`)
-    .then((res) => res.json());
+    .then(responseHandler);
 };
