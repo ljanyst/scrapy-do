@@ -31,11 +31,9 @@ class Poller extends Component {
   // Tick
   //----------------------------------------------------------------------------
   tick = () => {
-    console.log('tick');
     this.props.promiseFunc()
       .then((data) => {
         this.setState({ status: 'ok', nextTry: 1 });
-        console.log('success');
         this.timeout = setTimeout(this.tick, this.props.interval);
         return data;
       })
@@ -48,7 +46,6 @@ class Poller extends Component {
   // Error tick
   //----------------------------------------------------------------------------
   errorTick = () => {
-    console.log('error tick');
     if(this.state.countdown === 0) {
       this.setState({ status: 'retry' });
       this.timeout = setTimeout(this.tick, this.props.interval);
@@ -62,7 +59,6 @@ class Poller extends Component {
   // Error handler
   //----------------------------------------------------------------------------
   errorHandler = (error) => {
-    console.log('error', this.state.nextTry);
     const nextTry = this.state.nextTry*2;
     const interval = nextTry < 256 ? nextTry : 256;
     this.setState({ status: 'error', nextTry: interval, countdown: interval });
