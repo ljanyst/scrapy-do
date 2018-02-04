@@ -7,6 +7,7 @@
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { Alert } from 'react-bootstrap';
 
 class Poller extends Component {
   //----------------------------------------------------------------------------
@@ -66,6 +67,13 @@ class Poller extends Component {
   }
 
   //----------------------------------------------------------------------------
+  // Retry now
+  //----------------------------------------------------------------------------
+  retryNow = () => {
+    this.setState({ countdown: 0 });
+  }
+
+  //----------------------------------------------------------------------------
   // Mount
   //----------------------------------------------------------------------------
   componentDidMount() {
@@ -83,10 +91,37 @@ class Poller extends Component {
   // Render
   //----------------------------------------------------------------------------
   render() {
+    //--------------------------------------------------------------------------
+    // We're okay
+    //--------------------------------------------------------------------------
+    if(this.state.status === 'ok')
+      return (<div />);
+
+    //--------------------------------------------------------------------------
+    // Retrying
+    //--------------------------------------------------------------------------
+    if(this.state.status === 'retry')
+      return (
+        <div className='col-md-4 col-md-offset-4'>
+          <Alert bsStyle='danger' onClick={this.retryNow}>
+            <div className='alert-content'>
+              Retrying...
+            </div>
+          </Alert>
+        </div>
+      );
+
+    //--------------------------------------------------------------------------
+    // Error
+    //--------------------------------------------------------------------------
     return (
-      <div>
-        <p>Status: {this.state.status} </p>
-        <p>Countdown:  {this.state.countdown}</p>
+      <div className='col-md-4 col-md-offset-4'>
+        <Alert bsStyle='danger' type='button' onClick={this.retryNow}>
+          <div className='alert-content'>
+            Connection problem. Retrying in {this.state.countdown} second.
+            Click here to retry now.
+          </div>
+        </Alert>
       </div>
     );
   }
