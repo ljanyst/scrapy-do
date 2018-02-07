@@ -12,12 +12,32 @@ import 'bootstrap/dist/css/bootstrap-theme.css';
 import './index.css';
 import registerServiceWorker from './registerServiceWorker';
 import { BrowserRouter } from 'react-router-dom';
+import { createStore, combineReducers } from 'redux';
+import { Provider } from 'react-redux';
+
+import { backendReducer } from './reducers';
 
 import ScrapyDoApp from './components/ScrapyDoApp';
 
+//------------------------------------------------------------------------------
+// Redux store
+//------------------------------------------------------------------------------
+const store = createStore(
+  combineReducers({
+    backend: backendReducer
+  }),
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
+
+//------------------------------------------------------------------------------
+// The App component
+//------------------------------------------------------------------------------
 ReactDOM.render(
-  <BrowserRouter>
-    <ScrapyDoApp />
-  </BrowserRouter>,
+  <Provider store={store}>
+    <BrowserRouter>
+      <ScrapyDoApp />
+    </BrowserRouter>
+  </Provider>,
   document.getElementById('root'));
+
 registerServiceWorker();
