@@ -9,6 +9,7 @@ import React, { Component } from 'react';
 import { Route, Switch } from 'react-router-dom';
 
 import ScrapyDoNav from './ScrapyDoNav';
+import BackendStatus from './BackendStatus';
 import Dashboard from './Dashboard';
 import ProjectList from './ProjectList';
 import JobList from './JobList';
@@ -19,6 +20,7 @@ class ScrapyDoApp extends Component {
     return (
       <div>
         <ScrapyDoNav />
+        <BackendStatus />
 
         <Switch>
           <Route exact path='/' component={Dashboard} />
