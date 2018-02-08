@@ -12,6 +12,7 @@ import psutil
 import socket
 import mimetypes
 
+from autobahn.twisted.resource import WebSocketResource
 from dateutil.relativedelta import relativedelta
 from twisted.internet.defer import inlineCallbacks
 from twisted.cred.checkers import FilePasswordDB
@@ -23,6 +24,7 @@ from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
 from scrapy_do.utils import get_object
 from zope.interface import implementer
 from twisted.web import resource
+from .websocket import WSFactory, WSProtocol
 from .schedule import Status as JobStatus
 from scrapy_do import __version__
 from datetime import datetime
@@ -47,6 +49,14 @@ class WebApp(resource.Resource):
         for mod_name, mod_class_name in web_modules:
             mod_class = get_object(mod_class_name)
             self.putChild(mod_name.encode('utf-8'), mod_class(self))
+
+        #-----------------------------------------------------------------------
+        # Set up the websocket
+        #-----------------------------------------------------------------------
+        ws_factory = WSFactory(controller=self.controller)
+        ws_factory.protocol = WSProtocol
+        ws_resource = WebSocketResource(ws_factory)
+        self.putChild(b'ws', ws_resource)
 
         #-----------------------------------------------------------------------
         # Register UI modules
