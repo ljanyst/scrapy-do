@@ -10,7 +10,7 @@ import { connect } from 'react-redux';
 import { Alert } from 'react-bootstrap';
 
 import { backend } from '../utils/Backend';
-import { BACKEND_CONNECTING, BACKEND_OPENED } from '../actions';
+import { BACKEND_CONNECTING, BACKEND_OPENED } from '../actions/backend';
 
 //------------------------------------------------------------------------------
 // Backend status

@@ -5,7 +5,7 @@
 
 import {
   BACKEND_STATUS_SET, BACKEND_COUNTDOWN_SET, BACKEND_CONNECTING
-} from '../actions';
+} from '../actions/backend';
 
 const backendState = {
   status: BACKEND_CONNECTING,

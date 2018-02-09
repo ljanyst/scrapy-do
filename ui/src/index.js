@@ -15,11 +15,11 @@ import { BrowserRouter } from 'react-router-dom';
 import { createStore, combineReducers } from 'redux';
 import { Provider } from 'react-redux';
 
-import { backendReducer } from './reducers';
+import { backendReducer } from './reducers/backend';
 import {
   backendStatusSet, backendCountdownSet,
   BACKEND_CONNECTING, BACKEND_OPENED, BACKEND_CLOSED
-} from './actions';
+} from './actions/backend';
 import { backend, Backend } from './utils/Backend';
 
 import ScrapyDoApp from './components/ScrapyDoApp';
