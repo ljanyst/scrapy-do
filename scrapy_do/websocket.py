@@ -36,9 +36,9 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def onOpen(self):
-        self.send_daemon_info()
-        self.send_projects_info()
-        self.send_jobs_info()
+        self.send_daemon_status()
+        self.send_projects_status()
+        self.send_jobs_status()
 
     #---------------------------------------------------------------------------
     def onMessage(self, payload, isBinary):
@@ -55,10 +55,10 @@ class WSProtocol(WebSocketServerProtocol):
         self.sendMessage(data)
 
     #---------------------------------------------------------------------------
-    def send_daemon_info(self):
+    def send_daemon_status(self):
         p = psutil.Process(os.getpid())
         msg = {
-            'type': 'DAEMON_INFO',
+            'type': 'DAEMON_STATUS',
             'memoryUsage': float(p.memory_info().rss) / 1024. / 1024.,
             'cpuUsage': p.cpu_percent(),
             'time': int(time.time()),
@@ -70,22 +70,22 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_json(msg)
 
     #---------------------------------------------------------------------------
-    def send_projects_info(self):
+    def send_projects_status(self):
         controller = self.controller
         all_spiders = \
             [spider for prj in controller.projects for spider in prj.spiders]
 
         msg = {
-            'type': 'PROJECTS_INFO',
+            'type': 'PROJECTS_STATUS',
             'projects': len(controller.projects),
             'spiders': len(all_spiders),
         }
         self.send_json(msg)
 
     #---------------------------------------------------------------------------
-    def send_jobs_info(self):
+    def send_jobs_status(self):
         msg = {
-            'type': 'JOBS_INFO',
+            'type': 'JOBS_STATUS',
             'jobsRun': self.controller.counter_run,
             'jobsSuccessful': self.controller.counter_success,
             'jobsFailed': self.controller.counter_failure,
