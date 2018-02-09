@@ -1,6 +1,8 @@
 //------------------------------------------------------------------------------
 // Author: Lukasz Janyst <lukasz@jany.st>
 // Date: 06.02.2018
+//
+// Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 //------------------------------------------------------------------------------
 
 import {
