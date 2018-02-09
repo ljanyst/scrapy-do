@@ -22,6 +22,7 @@ import {
   BACKEND_CONNECTING, BACKEND_OPENED, BACKEND_CLOSED
 } from './actions/backend';
 import { backend, Backend } from './utils/Backend';
+import { messageStoreEvent } from './utils/backend-store-connectors';
 
 import ScrapyDoApp from './components/ScrapyDoApp';
 
@@ -51,6 +52,7 @@ const backendStoreEvent = (event, data) => {
 };
 
 backend.addEventListener(backendStoreEvent);
+backend.addEventListener(messageStoreEvent);
 
 //------------------------------------------------------------------------------
 // The App component
