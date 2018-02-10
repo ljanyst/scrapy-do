@@ -13,6 +13,7 @@ import os
 
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from autobahn.twisted.websocket import WebSocketServerFactory
+from scrapy_do.controller import Event as ControllerEvent
 from scrapy_do import __version__
 
 
@@ -39,6 +40,7 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_daemon_status()
         self.send_projects_status()
         self.send_jobs_status()
+        self.controller.add_event_listener(self.on_controller_event)
 
     #---------------------------------------------------------------------------
     def onMessage(self, payload, isBinary):
@@ -46,7 +48,7 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def onClose(self, wasClean, code, reason):
-        pass
+        self.controller.remove_event_listener(self.on_controller_event)
 
     #---------------------------------------------------------------------------
     def send_json(self, msg):
@@ -93,3 +95,8 @@ class WSProtocol(WebSocketServerProtocol):
             'jobsScheduled': len(self.controller.scheduled_jobs),
         }
         self.send_json(msg)
+
+    #---------------------------------------------------------------------------
+    def on_controller_event(self, event_type, event_data):
+        if event_type == ControllerEvent.DAEMON_STATUS_CHANGE:
+            self.send_daemon_status()
