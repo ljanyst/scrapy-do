@@ -509,5 +509,13 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(len(controller.projects), 0)
 
     #---------------------------------------------------------------------------
+    def test_events(self):
+        controller = self.controller
+        listener = Mock()
+        controller.add_event_listener(listener)
+        controller.dispatch_periodic_events()
+        controller.remove_event_listener(listener)
+
+    #---------------------------------------------------------------------------
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
