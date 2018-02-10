@@ -11,8 +11,10 @@ of them.
 """
 
 import tempfile
+import psutil
 import pickle
 import shutil
+import time
 import os
 
 from twisted.application.service import Service
@@ -26,11 +28,20 @@ from .schedule import Schedule, Job, Actor, Status
 from schedule import Scheduler
 from datetime import datetime
 from .utils import schedule_job, run_process, twisted_sleep, exc_repr
+from enum import Enum
 
 
 #-------------------------------------------------------------------------------
 Project = namedtuple('Project', ['name', 'archive', 'spiders'])
 RunningJob = namedtuple('RunningJob', ['process', 'finished_d', 'time_started'])
+
+
+#-------------------------------------------------------------------------------
+class Event(Enum):
+    """
+    Controller even type.
+    """
+    DAEMON_STATUS_CHANGE = 1
 
 
 #-------------------------------------------------------------------------------
@@ -74,6 +85,9 @@ class Controller(Service):
         self.counter_failure = 0
         self.counter_cancel = 0
         self.start_time = datetime.now()
+        self.listeners = set()
+        self.mem_usage = None
+        self.mem_usage_ts = None
 
         #-----------------------------------------------------------------------
         # Create all the directories
@@ -125,6 +139,7 @@ class Controller(Service):
         self.scheduler_loop = LoopingCall(self.run_scheduler)
         self.crawlers_loop = LoopingCall(self.run_crawlers)
         self.purger_loop = LoopingCall(self.purge_completed_jobs)
+        self.event_loop = LoopingCall(self.dispatch_periodic_events)
 
     #---------------------------------------------------------------------------
     def startService(self):
@@ -135,6 +150,7 @@ class Controller(Service):
         self.scheduler_loop.start(1.)
         self.crawlers_loop.start(1.)
         self.purger_loop.start(10.)
+        self.event_loop.start(1.)
 
     #---------------------------------------------------------------------------
     def stopService(self):
@@ -145,6 +161,7 @@ class Controller(Service):
         self.scheduler_loop.stop()
         self.crawlers_loop.stop()
         self.purger_loop.stop()
+        self.event_loop.stop()
         return self.wait_for_running_jobs(cancel=True)
 
     #---------------------------------------------------------------------------
@@ -572,3 +589,44 @@ class Controller(Service):
         os.remove(self.projects[name].archive)
         del self.projects[name]
         self.log.info('Project "{}" removed'.format(name))
+
+    #---------------------------------------------------------------------------
+    def add_event_listener(self, listener):
+        """
+        Add an event listener.
+        """
+        self.listeners.add(listener)
+
+    #---------------------------------------------------------------------------
+    def remove_event_listener(self, listener):
+        """
+        Remove the event listener.
+        """
+        self.listeners.remove(listener)
+
+    #---------------------------------------------------------------------------
+    def dispatch_event(self, event_type, event_data):
+        """
+        Dispatch an event to all the listeners.
+        """
+        for listener in self.listeners:
+            listener(event_type, event_data)
+
+    #---------------------------------------------------------------------------
+    def dispatch_periodic_events(self):
+        """
+        Dispatch periodic events if necessary.
+        """
+        #-----------------------------------------------------------------------
+        # Daemon status - send the event either every minute or whenever
+        # the memory usage crossed a megabyte boundary
+        #-----------------------------------------------------------------------
+        mem_usage = psutil.Process(os.getpid()).memory_info().rss
+        mem_usage = float(mem_usage) / 1024. / 1024.
+        mem_usage = int(mem_usage)
+        now = time.time()
+        if self.mem_usage is None or now - self.mem_usage_ts >= 60 or \
+                abs(self.mem_usage - mem_usage) >= 1:
+            self.mem_usage = mem_usage
+            self.mem_usage_ts = now
+            self.dispatch_event(Event.DAEMON_STATUS_CHANGE, None)
