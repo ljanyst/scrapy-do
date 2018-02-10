@@ -7,6 +7,7 @@
 
 import unittest
 
+from scrapy_do.controller import Event as ControllerEvent
 from scrapy_do.websocket import WSFactory, WSProtocol
 from unittest.mock import Mock, patch
 
@@ -33,3 +34,5 @@ class WebSocketTests(unittest.TestCase):
             protocol.onOpen()
             protocol.onMessage(None, None)
             protocol.onClose(None, None, None)
+            protocol.on_controller_event(ControllerEvent.DAEMON_STATUS_CHANGE,
+                                         None)
