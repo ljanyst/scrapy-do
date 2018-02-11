@@ -15,8 +15,8 @@ const statusState = {
   time: null,
   timezone: null,
   hostname: null,
-  startTime: null,
-  deamonVersion: null,
+  uptime: null,
+  daemonVersion: null,
   projects: null,
   spiders: null,
   jobsRun: null,
@@ -37,8 +37,8 @@ export function statusReducer(state = statusState, action) {
       time: action.time,
       timezone: action.timezone,
       hostname: action.hostname,
-      startTime: action.startTime,
-      deamonVersion: action.daemonVersion
+      uptime: action.uptime,
+      daemonVersion: action.daemonVersion
     };
 
   case PROJECTS_STATUS_SET:

@@ -11,7 +11,7 @@ export const JOBS_STATUS_SET = 'JOBS_STATUS_SET';
 
 export function daemonStatusSet(status) {
   const {
-    memoryUsage, cpuUsage, time, timezone, hostname, startTime, daemonVersion
+    memoryUsage, cpuUsage, time, timezone, hostname, uptime, daemonVersion
   } = status;
   return {
     type: DAEMON_STATUS_SET,
@@ -20,7 +20,7 @@ export function daemonStatusSet(status) {
     time,
     timezone,
     hostname,
-    startTime,
+    uptime,
     daemonVersion
   };
 }
