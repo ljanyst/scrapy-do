@@ -141,6 +141,6 @@ setup(
     ],
     install_requires = [
         'scrapy', 'twisted', 'pyOpenSSL', 'psutil', 'python-dateutil',
-        'schedule', 'pem', 'tabulate', 'requests', 'autobahn'
+        'schedule', 'pem', 'tabulate', 'requests', 'autobahn', 'tzlocal'
     ]
 )
