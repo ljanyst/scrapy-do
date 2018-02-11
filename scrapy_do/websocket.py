@@ -5,6 +5,7 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import calendar
 import socket
 import psutil
 import time
@@ -13,8 +14,12 @@ import os
 
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from autobahn.twisted.websocket import WebSocketServerFactory
+from dateutil.relativedelta import relativedelta
 from scrapy_do.controller import Event as ControllerEvent
 from scrapy_do import __version__
+from datetime import datetime
+from tzlocal import get_localzone
+from .utils import pprint_relativedelta
 
 
 #-------------------------------------------------------------------------------
@@ -59,14 +64,19 @@ class WSProtocol(WebSocketServerProtocol):
     #---------------------------------------------------------------------------
     def send_daemon_status(self):
         p = psutil.Process(os.getpid())
+        uptime = relativedelta(datetime.now(), self.controller.start_time)
+        uptime = pprint_relativedelta(uptime)
+        uptime = ' '.join(uptime.split()[:-1])
+        if not uptime:
+            uptime = '0m'
         msg = {
             'type': 'DAEMON_STATUS',
-            'memoryUsage': float(p.memory_info().rss) / 1024. / 1024.,
+            'memoryUsage': int(float(p.memory_info().rss) / 1024. / 1024.),
             'cpuUsage': p.cpu_percent(),
-            'time': int(time.time()),
-            'timezone': "{}; {}".format(time.tzname[0], time.tzname[1]),
+            'time': int(calendar.timegm(time.gmtime())),
+            'timezone': str(get_localzone()),
             'hostname': socket.gethostname(),
-            'startTime': int(self.controller.start_time.timestamp()),
+            'uptime': uptime,
             'daemonVersion': __version__,
         }
         self.send_json(msg)
