@@ -76,6 +76,7 @@ class build_ui(build_py):
             artefacts = [
                 'asset-manifest.json',
                 'favicon.png',
+                'scrapy-do-logo.png',
                 'index.html',
                 'manifest.json',
                 'service-worker.js'
