@@ -10,6 +10,7 @@ import unittest
 from scrapy_do.controller import Event as ControllerEvent
 from scrapy_do.websocket import WSFactory, WSProtocol
 from unittest.mock import Mock, patch
+from datetime import datetime
 
 
 #-------------------------------------------------------------------------------
@@ -26,6 +27,7 @@ class WebSocketTests(unittest.TestCase):
         controller.counter_failure = 0
         controller.counter_success = 0
         controller.counter_run = 0
+        controller.start_time = datetime.now()
         factory = WSFactory(controller=controller)
         factory.protocol = WSProtocol
         protocol = factory.buildProtocol(None)
