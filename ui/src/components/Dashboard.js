@@ -6,6 +6,7 @@
 //------------------------------------------------------------------------------
 
 import React, { Component } from 'react';
+import { Table } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import moment from 'moment-timezone';
 
@@ -20,12 +21,41 @@ class Dashboard extends Component {
       <div className='col-md-6 col-md-offset-3'>
         <div className='dashboard-content'>
           <img src='scrapy-do-logo.png' alt='Scrapy-Do Logo' />
-          <p>Version {this.props.daemonVersion} @ {this.props.hostname}</p>
-          <p>Server time: {serverTime} ({this.props.timezone})</p>
-          <p>
-            Uptime: {this.props.uptime} | CPU Usage: {this.props.cpuUsage}% |
-            Memory Usage: {this.props.memoryUsage}MB
-          </p>
+          <div className='text-summary'>
+            <div>Version {this.props.daemonVersion} @ {this.props.hostname}</div>
+            <div>Server time: {serverTime} ({this.props.timezone})</div>
+            <div>
+              Uptime: {this.props.uptime} | CPU Usage: {this.props.cpuUsage}% |
+              Memory Usage: {this.props.memoryUsage}MB
+            </div>
+            <div>
+              Projects: {this.props.projects} |
+              Spiders: {this.props.spiders}
+            </div>
+
+            <div className='jobs-summary'>
+              <Table striped bordered condensed>
+                <thead>
+                  <tr>
+                    <th>Jobs Run</th>
+                    <th>Successful</th>
+                    <th>Failed</th>
+                    <th>Canceled</th>
+                    <th>Scheduled</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{this.props.jobsRun}</td>
+                    <td>{this.props.jobsSuccessful}</td>
+                    <td>{this.props.jobsFailed}</td>
+                    <td>{this.props.jobsCanceled}</td>
+                    <td>{this.props.jobsScheduled}</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </div>
+          </div>
         </div>
       </div>
     );

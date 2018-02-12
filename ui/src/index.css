@@ -11,3 +11,16 @@ body {
 .dashboard-content {
     text-align: center;
 }
+
+th {
+    text-align: center;
+}
+
+.text-summary {
+    text-align: center;
+    margin-top: 1em;
+}
+
+.jobs-summary {
+    margin-top: 3em;
+}
