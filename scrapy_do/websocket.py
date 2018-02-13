@@ -5,6 +5,7 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import functools
 import calendar
 import socket
 import psutil
@@ -45,6 +46,7 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_daemon_status()
         self.send_projects_status()
         self.send_jobs_status()
+        self.send_project_list()
         self.controller.add_event_listener(self.on_controller_event)
 
     #---------------------------------------------------------------------------
@@ -104,6 +106,20 @@ class WSProtocol(WebSocketServerProtocol):
             'jobsFailed': self.controller.counter_failure,
             'jobsCanceled': self.controller.counter_cancel,
             'jobsScheduled': len(self.controller.scheduled_jobs),
+        }
+        self.send_json(msg)
+
+    #---------------------------------------------------------------------------
+    def send_project_list(self):
+        projects = self.controller.get_projects()
+        projects = functools.reduce(lambda acc, x: acc + [{
+            'name': x,
+            'spiders': self.controller.get_spiders(x)
+        }], projects, [])
+
+        msg = {
+            'type': 'PROJECT_LIST',
+            'projects': projects
         }
         self.send_json(msg)
 
