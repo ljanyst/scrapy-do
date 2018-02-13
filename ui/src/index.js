@@ -17,6 +17,7 @@ import { Provider } from 'react-redux';
 
 import { backendReducer } from './reducers/backend';
 import { statusReducer } from './reducers/status';
+import { projectsReducer } from './reducers/projects';
 import {
   backendStatusSet, backendCountdownSet,
   BACKEND_CONNECTING, BACKEND_OPENED, BACKEND_CLOSED
@@ -32,7 +33,8 @@ import ScrapyDoApp from './components/ScrapyDoApp';
 export const store = createStore(
   combineReducers({
     backend: backendReducer,
-    status: statusReducer
+    status: statusReducer,
+    projects: projectsReducer
   }),
   window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
 );
