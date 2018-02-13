@@ -24,3 +24,9 @@ th {
 .jobs-summary {
     margin-top: 3em;
 }
+
+.list-empty {
+    text-align: center;
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
