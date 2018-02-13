@@ -85,7 +85,8 @@ class WSProtocol(WebSocketServerProtocol):
     def send_projects_status(self):
         controller = self.controller
         all_spiders = \
-            [spider for prj in controller.projects for spider in prj.spiders]
+            [spider for prj in controller.projects.values()
+                    for spider in prj.spiders]
 
         msg = {
             'type': 'PROJECTS_STATUS',
