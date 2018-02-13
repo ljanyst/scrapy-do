@@ -10,6 +10,7 @@ import { Backend } from './Backend';
 import {
   daemonStatusSet, projectsStatusSet, jobsStatusSet
 } from '../actions/status';
+import { projectListSet } from '../actions/projects';
 
 //------------------------------------------------------------------------------
 // Make backend events change the state of the stare
@@ -27,6 +28,9 @@ export const messageStoreEvent = (event, data) => {
     break;
   case 'JOBS_STATUS':
     store.dispatch(jobsStatusSet(data));
+    break;
+  case 'PROJECT_LIST':
+    store.dispatch(projectListSet(data.projects));
     break;
 
   default:
