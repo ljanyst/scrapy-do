@@ -10,20 +10,20 @@ import {
 } from '../actions/status';
 
 const statusState = {
-  memoryUsage: null,
-  cpuUsage: null,
-  time: null,
-  timezone: null,
-  hostname: null,
-  uptime: null,
-  daemonVersion: null,
-  projects: null,
-  spiders: null,
-  jobsRun: null,
-  jobsSuccessful: null,
-  jobsFailed: null,
-  jobsCanceled: null,
-  jobsScheduled: null
+  memoryUsage: 0,
+  cpuUsage: 0,
+  time: 0,
+  timezone: 'UTC',
+  hostname: 'unknown',
+  uptime: '0m',
+  daemonVersion: '0.0.0',
+  projects: 0,
+  spiders: 0,
+  jobsRun: 0,
+  jobsSuccessful: 0,
+  jobsFailed: 0,
+  jobsCanceled: 0,
+  jobsScheduled: 0
 };
 
 export function statusReducer(state = statusState, action) {
