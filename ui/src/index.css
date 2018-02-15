@@ -30,3 +30,23 @@ th {
     margin-top: 2em;
     margin-bottom: 2em;
 }
+
+.control-button-container {
+    text-align: center;
+    margin: 1em;
+}
+
+.item-panel {
+    float: right;
+}
+
+.list-item {
+    overflow: auto;
+}
+
+.spider-list {
+}
+
+.spider-list Button {
+    margin: 0.3em;
+}

@@ -7,7 +7,7 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { ListGroup, Panel } from 'react-bootstrap';
+import { Panel, Button, Glyphicon } from 'react-bootstrap';
 
 import ProjectListItem from './ProjectListItem';
 
@@ -26,18 +26,25 @@ class ProjectList extends Component {
 
     if(projectNames.length)
       list = (
-        <ListGroup>
+        <div>
           {projectNames.map(project => (
             <ProjectListItem
               key={project}
               projectName={project} />
           ))}
-        </ListGroup>
+        </div>
       );
 
     return(
       <div className='col-md-8 col-md-offset-2'>
         <h2>Projects</h2>
+        <div className='control-button-container'>
+          <Button bsSize="xsmall"
+          onClick={() => {
+          }}>
+          <Glyphicon glyph='upload'/> Push project
+        </Button>
+        </div>
         {list}
       </div>
     );

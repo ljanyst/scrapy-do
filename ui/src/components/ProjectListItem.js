@@ -8,7 +8,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { ListGroupItem } from 'react-bootstrap';
+import { Button, Glyphicon, Panel } from 'react-bootstrap';
 
 //------------------------------------------------------------------------------
 // Project List Item
@@ -27,18 +27,29 @@ class ProjectListItem extends Component {
   render() {
     const project = this.props;
     return(
-      <ListGroupItem>
-        <div>
-          <strong>
-            {project.name}
-          </strong>
-          <ul>
+      <Panel>
+        <Panel.Heading >
+          <div className='list-item'>
+            <div className='item-panel'>
+              <Button
+                bsSize="xsmall"
+                onClick={() => {}}>
+                <Glyphicon glyph='trash'/> Remove
+              </Button>
+            </div>
+            <strong>{project.name}</strong>
+          </div>
+        </Panel.Heading>
+        <Panel.Body>
+          <div className='spider-list'>
             {project.spiders.map(spider => (
-              <li key={spider}>{spider}</li>
+              <Button bsSize="xsmall" key={spider}>
+                <Glyphicon glyph='flash'/> {spider}
+              </Button>
             ))}
-          </ul>
-        </div>
-      </ListGroupItem>
+          </div>
+        </Panel.Body>
+      </Panel>
     );
   }
 }
