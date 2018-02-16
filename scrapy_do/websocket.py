@@ -126,6 +126,29 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_json(msg)
 
     #---------------------------------------------------------------------------
+    def send_project_push(self, prj):
+        msg = {
+            'type': 'PROJECT_PUSH',
+            'name': prj.name,
+            'spiders': prj.spiders
+        }
+        self.send_json(msg)
+
+    #---------------------------------------------------------------------------
+    def send_project_remove(self, name):
+        msg = {
+            'type': 'PROJECT_REMOVE',
+            'name': name
+        }
+        self.send_json(msg)
+
+    #---------------------------------------------------------------------------
     def on_controller_event(self, event_type, event_data):
         if event_type == ControllerEvent.DAEMON_STATUS_CHANGE:
             self.send_daemon_status()
+        elif event_type == ControllerEvent.PROJECT_PUSH:
+            self.send_project_push(event_data)
+            self.send_projects_status()
+        elif event_type == ControllerEvent.PROJECT_REMOVE:
+            self.send_project_remove(event_data)
+            self.send_projects_status()
