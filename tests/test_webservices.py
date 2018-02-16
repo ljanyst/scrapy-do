@@ -146,12 +146,10 @@ class WebServicesTests(unittest.TestCase):
         web_app.controller.reset_mock()
         d = Deferred()
         request.finish.side_effect = lambda: d.callback(None)
-        request.args = {
-            b'name': [b'test'],
-            b'archive': [b'somedata']
-        }
+        request.args = {b'archive': [b'somedata']}
         web_app.controller.push_project.side_effect = None
-        web_app.controller.push_project.return_value = ['test1', 'test2']
+        web_app.controller.push_project.return_value = \
+            Project('test', None, ['test1', 'test2'])
 
         service.render(request)
         yield d
@@ -159,8 +157,10 @@ class WebServicesTests(unittest.TestCase):
         data = request.write.call_args[0][0].decode('utf-8')
         decoded = json.loads(data)
         self.assertIn('status', decoded)
+        self.assertIn('name', decoded)
         self.assertIn('spiders', decoded)
         self.assertEqual(decoded['status'], 'ok')
+        self.assertEqual(decoded['name'], 'test')
         self.assertIn('test1', decoded['spiders'])
         self.assertIn('test2', decoded['spiders'])
 

@@ -13,6 +13,7 @@ from twisted.internet.defer import inlineCallbacks
 from scrapy_do.controller import Controller
 from scrapy_do.schedule import Status, Actor, Job
 from scrapy_do.utils import twisted_sleep, run_process
+from distutils.spawn import find_executable
 from unittest.mock import Mock, patch, DEFAULT
 from twisted.trial import unittest
 
@@ -43,7 +44,7 @@ class ControllerTests(unittest.TestCase):
         # jobs should be converted to PENDING to be restarted ASAP.
         #-----------------------------------------------------------------------
         controller = self.controller
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
         controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
         controller.schedule_job('quotesbot', 'toscrape-xpath',
                                 'every 2 seconds')
@@ -76,8 +77,17 @@ class ControllerTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Set up
         #-----------------------------------------------------------------------
-        with open('tests/broken-proj.zip', 'rb') as f:
-            broken_data = f.read()
+        with open('tests/broken-no-proj.zip', 'rb') as f:
+            broken_data_no_proj = f.read()
+
+        with open('tests/broken-no-name.zip', 'rb') as f:
+            broken_data_no_name = f.read()
+
+        with open('tests/broken-wrong-name.zip', 'rb') as f:
+            broken_data_wrong_name = f.read()
+
+        with open('tests/broken-no-spiders.zip', 'rb') as f:
+            broken_data_no_spiders = f.read()
 
         controller = self.controller
 
@@ -87,32 +97,48 @@ class ControllerTests(unittest.TestCase):
         def chk_unzip(e):
             self.assertEqual(str(e), 'Not a valid zip archive')
         unzip_error = {
-            'name': 'test',
             'data': b'foo',
             'exc_check': chk_unzip
         }
 
+        def chk_prj(e):
+            self.assertEqual(str(e), 'No project found in the archive')
+        no_project_error = {
+            'data': broken_data_no_proj,
+            'exc_check': chk_prj
+        }
+
+        def chk_name_exists(e):
+            self.assertEqual(str(e),
+                             'Can\'t extract project name from the config file')
+        no_name_error = {
+            'data': broken_data_no_name,
+            'exc_check': chk_name_exists
+        }
+
         def chk_name(e):
             self.assertTrue(str(e).startswith('Project'))
-        name_error = {
-            'name': 'test',
-            'data': broken_data,
+        wrong_name_error = {
+            'data': broken_data_wrong_name,
             'exc_check': chk_name
         }
 
         def chk_list(e):
             self.assertEqual(str(e), 'Unable to get the list of spiders')
         list_error = {
-            'name': 'broken-proj',
-            'data': broken_data,
+            'data': broken_data_no_spiders,
             'exc_check': chk_list
         }
 
-        error_params = [unzip_error, name_error, list_error]
+        error_params = [
+            unzip_error, no_project_error, no_name_error, wrong_name_error,
+            list_error
+        ]
 
         #-----------------------------------------------------------------------
         # Test the error cases
         #-----------------------------------------------------------------------
+        unzip = find_executable('unzip')
         for params in error_params:
             temp_test_dir = tempfile.mkdtemp()
             temp_test_file = tempfile.mkstemp()
@@ -120,16 +146,16 @@ class ControllerTests(unittest.TestCase):
                                 mkstemp=DEFAULT, mkdtemp=DEFAULT) as mock:
                 mock['mkdtemp'].return_value = temp_test_dir
                 mock['mkstemp'].return_value = temp_test_file
+                with patch('scrapy_do.controller.find_executable') as fe_mock:
+                    fe_mock.side_effect = [unzip, '/bin/false']
+                    try:
+                        yield controller.push_project(params['data'])
+                        self.assertFail()
+                    except ValueError as e:
+                        params['exc_check'](e)
 
-                try:
-                    yield controller.push_project(params['name'],
-                                                  params['data'])
-                    self.assertFail()
-                except ValueError as e:
-                    params['exc_check'](e)
-
-                self.assertFalse(os.path.exists(temp_test_dir))
-                self.assertFalse(os.path.exists(temp_test_file[1]))
+                    self.assertFalse(os.path.exists(temp_test_dir))
+                    self.assertFalse(os.path.exists(temp_test_file[1]))
 
         #-----------------------------------------------------------------------
         # Test the correct case
@@ -141,12 +167,12 @@ class ControllerTests(unittest.TestCase):
             mock['mkdtemp'].return_value = temp_test_dir
             mock['mkstemp'].return_value = temp_test_file
 
-            spiders = yield controller.push_project('quotesbot',
-                                                    self.project_archive_data)
+            project = yield controller.push_project(self.project_archive_data)
             self.assertFalse(os.path.exists(temp_test_dir))
             self.assertFalse(os.path.exists(temp_test_file[1]))
-            self.assertIn('toscrape-css', spiders)
-            self.assertIn('toscrape-xpath', spiders)
+            self.assertEqual('quotesbot', project.name)
+            self.assertIn('toscrape-css', project.spiders)
+            self.assertIn('toscrape-xpath', project.spiders)
 
         #-----------------------------------------------------------------------
         # Schedule a job for one of the spiders and remove it in the new
@@ -154,14 +180,13 @@ class ControllerTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         controller.schedule_job('quotesbot', 'toscrape-css', 'every 25 minutes')
         try:
-            yield controller.push_project('quotesbot',
-                                          self.project_no_css_archive_data)
+            yield controller.push_project(self.project_no_css_archive_data)
             self.fail('Inserting a project without a spider having scheduled '
                       'jobs should fail')
         except ValueError as e:
             self.assertTrue(str(e).startswith('Spider toscrape-css'))
 
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
@@ -170,10 +195,9 @@ class ControllerTests(unittest.TestCase):
         # Set up
         #-----------------------------------------------------------------------
         controller = self.controller
-        spiders_p = yield controller.push_project('quotesbot',
-                                                  self.project_archive_data)
-        self.assertIn('toscrape-css', spiders_p)
-        self.assertIn('toscrape-xpath', spiders_p)
+        project = yield controller.push_project(self.project_archive_data)
+        self.assertIn('toscrape-css', project.spiders)
+        self.assertIn('toscrape-xpath', project.spiders)
 
         #-----------------------------------------------------------------------
         # Project/spider accessors
@@ -181,7 +205,7 @@ class ControllerTests(unittest.TestCase):
         projects = controller.get_projects()
         self.assertIn('quotesbot', projects)
         spiders = controller.get_spiders('quotesbot')
-        for spider in spiders_p:
+        for spider in project.spiders:
             self.assertIn(spider, spiders)
 
         self.assertRaises(KeyError,
@@ -229,10 +253,9 @@ class ControllerTests(unittest.TestCase):
         # Set up
         #-----------------------------------------------------------------------
         controller = self.controller
-        spiders_p = yield controller.push_project('quotesbot',
-                                                  self.project_archive_data)
-        self.assertIn('toscrape-css', spiders_p)
-        self.assertIn('toscrape-xpath', spiders_p)
+        project = yield controller.push_project(self.project_archive_data)
+        self.assertIn('toscrape-css', project.spiders)
+        self.assertIn('toscrape-xpath', project.spiders)
 
         #-----------------------------------------------------------------------
         # Check if a scheduled job created a new pending job after two
@@ -281,7 +304,7 @@ class ControllerTests(unittest.TestCase):
         # Test the successfull case
         #-----------------------------------------------------------------------
         controller = self.controller
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
         temp_dir = tempfile.mkdtemp()
 
         with patch('tempfile.mkdtemp') as mock_mkdtemp:
@@ -312,7 +335,7 @@ class ControllerTests(unittest.TestCase):
         # Set the projects up, schedule some jobs, and run the scheduler
         #-----------------------------------------------------------------------
         controller = self.controller
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
         controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
         controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
         controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
@@ -377,7 +400,7 @@ class ControllerTests(unittest.TestCase):
         # Set things up
         #-----------------------------------------------------------------------
         controller = self.controller
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
         job_id1 = controller.schedule_job('quotesbot', 'toscrape-css',
                                           'every second')
         controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
@@ -458,7 +481,7 @@ class ControllerTests(unittest.TestCase):
     @inlineCallbacks
     def test_purge_completed(self):
         controller = self.controller
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
         controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
         controller.schedule_job('quotesbot', 'toscrape-xpath', 'every second')
         controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
@@ -483,7 +506,7 @@ class ControllerTests(unittest.TestCase):
     @inlineCallbacks
     def test_remove_project(self):
         controller = self.controller
-        yield controller.push_project('quotesbot', self.project_archive_data)
+        yield controller.push_project(self.project_archive_data)
         id1 = controller.schedule_job('quotesbot', 'toscrape-css',
                                       'every second')
         id2 = controller.schedule_job('quotesbot', 'toscrape-xpath',
