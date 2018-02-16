@@ -199,7 +199,6 @@ class PushProject(JsonResource):
         @inlineCallbacks
         def do_async():
             try:
-                name = request.args[b'name'][0].decode('utf-8')
                 data = request.args[b'archive'][0]
             except KeyError as e:
                 result = {
@@ -214,8 +213,12 @@ class PushProject(JsonResource):
             try:
                 controller = self.parent.controller
 
-                spiders = yield controller.push_project(name, data)
-                result = {'status': 'ok', 'spiders': spiders}
+                project = yield controller.push_project(data)
+                result = {
+                    'status': 'ok',
+                    'name': project.name,
+                    'spiders': project.spiders
+                }
             except Exception as e:
                 request.setResponseCode(400)
                 result = {'status': 'error', 'msg': str(e)}
