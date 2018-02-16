@@ -178,15 +178,15 @@ def push_project_arg_process(args):
         path = os.path.join(path, args.project_path)
         path = os.path.normpath(path)
 
-    name, archive = build_project_archive(path)
-    return {'name': name, 'archive': archive}
+    _, archive = build_project_archive(path)
+    return {'archive': archive}
 
 
 def push_project_rsp_parse(rsp):
     data = []
     for spider in rsp['spiders']:
         data.append([spider])
-    headers = ['spiders']
+    headers = [rsp['name']]
     return {'headers': headers, 'data': data}
 
 
