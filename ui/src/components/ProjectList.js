@@ -16,7 +16,7 @@ import ProjectListItem from './ProjectListItem';
 //------------------------------------------------------------------------------
 class ProjectList extends Component {
   render() {
-    const projectNames = Object.keys(this.props.projects);
+    const projectNames = this.props.projects;
 
     var list = (
       <Panel>
@@ -56,7 +56,7 @@ class ProjectList extends Component {
 //------------------------------------------------------------------------------
 function mapStateToProps(state, ownProps) {
   return {
-    projects: state.projects
+    projects: Object.keys(state.projects).sort()
   };
 }
 
