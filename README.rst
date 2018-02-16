@@ -59,7 +59,7 @@ Quick Start
        $ cd quotesbot
        $ scrapy-do-cl push-project
        +----------------+
-       | spiders        |
+       | quotesbot      |
        |----------------|
        | toscrape-css   |
        | toscrape-xpath |

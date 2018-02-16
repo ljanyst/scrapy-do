@@ -60,19 +60,18 @@ name if it is already present.
 * Method: ``POST``
 * Parameters:
 
-  * ``name`` - name of the project
   * ``archive`` - a binary buffer containing the project archive
 
   .. code-block:: console
 
        $ curl -s http://localhost:7654/push-project.json \
-              -F name=quotesbot \
               -F archive=@quotesbot.zip | jq -r
 
   .. code-block:: JSON
 
        {
          "status": "ok",
+         "name": "quotesbot",
          "spiders": [
            "toscrape-css",
            "toscrape-xpath"

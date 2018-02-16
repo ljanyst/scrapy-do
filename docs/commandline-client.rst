@@ -84,7 +84,7 @@ Example:
 
        $ scrapy-do-cl push-project
        +----------------+
-       | spiders        |
+       | quotesbot      |
        |----------------|
        | toscrape-css   |
        | toscrape-xpath |
