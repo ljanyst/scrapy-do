@@ -21,13 +21,15 @@ class WebSocketTests(unittest.TestCase):
         controller = Mock()
         controller.counter_run = 0
         controller.start_time.timestamp.return_value = 0
-        controller.projects = []
+        controller.projects = {}
         controller.scheduled_jobs = []
         controller.counter_cancel = 0
         controller.counter_failure = 0
         controller.counter_success = 0
         controller.counter_run = 0
         controller.start_time = datetime.now()
+        controller.get_projects.return_value = ['foo', 'bar']
+        controller.get_spiders.return_value = ['foo', 'bar']
         factory = WSFactory(controller=controller)
         factory.protocol = WSProtocol
         protocol = factory.buildProtocol(None)
