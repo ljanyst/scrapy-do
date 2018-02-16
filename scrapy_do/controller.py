@@ -10,6 +10,7 @@ All the functionality running for running the jobs and keeping a proper record
 of them.
 """
 
+import configparser
 import tempfile
 import psutil
 import pickle
@@ -29,6 +30,7 @@ from schedule import Scheduler
 from datetime import datetime
 from .utils import schedule_job, run_process, twisted_sleep, exc_repr
 from enum import Enum
+from glob import glob
 
 
 #-------------------------------------------------------------------------------
@@ -166,16 +168,15 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
-    def push_project(self, name, data):
+    def push_project(self, data):
         """
         Register a project of a given name with the zipped code passed in data.
 
-        :param name: Name of the project
         :param data: Binary blob with a zipped project code
-        :return:     A deferred that gets called back with a list of spiders
-                     provided by the project, of a `ValueError` failure.
+        :return:     A deferred that gets called back with a `Project` object,
+                     or a `ValueError` failure.
         """
-        self.log.info('Pushing project "{}"'.format(name))
+        self.log.info('Pushing new project')
 
         #-----------------------------------------------------------------------
         # Store the data in a temoporary file
@@ -200,6 +201,22 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         # Figure out the list of spiders
         #-----------------------------------------------------------------------
+        config_files = glob(os.path.join(temp_dir, '**/scrapy.cfg'))
+
+        if not config_files:
+            shutil.rmtree(temp_dir)
+            os.remove(tmp[1])
+            raise ValueError('No project found in the archive')
+
+        config = configparser.ConfigParser()
+        config.read(config_files[0])
+        try:
+            name = config.get('deploy', 'project')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            shutil.rmtree(temp_dir)
+            os.remove(tmp[1])
+            raise ValueError('Can\'t extract project name from the config file')
+
         temp_proj_dir = os.path.join(temp_dir, name)
         if not os.path.exists(temp_proj_dir):
             shutil.rmtree(temp_dir)
@@ -250,7 +267,7 @@ class Controller(Service):
 
         self.log.info('Added project "{}" with spiders {}'.format(
             name, prj.spiders))
-        returnValue(prj.spiders)
+        returnValue(prj)
 
     #---------------------------------------------------------------------------
     def get_projects(self):
