@@ -8,6 +8,7 @@
 import unittest
 
 from scrapy_do.controller import Event as ControllerEvent
+from scrapy_do.controller import Project
 from scrapy_do.websocket import WSFactory, WSProtocol
 from unittest.mock import Mock, patch
 from datetime import datetime
@@ -40,3 +41,8 @@ class WebSocketTests(unittest.TestCase):
             protocol.onClose(None, None, None)
             protocol.on_controller_event(ControllerEvent.DAEMON_STATUS_CHANGE,
                                          None)
+            project = Project('project', None, ['spider1', 'spider2'])
+            protocol.on_controller_event(ControllerEvent.PROJECT_PUSH,
+                                         project)
+            protocol.on_controller_event(ControllerEvent.PROJECT_REMOVE,
+                                         'project')
