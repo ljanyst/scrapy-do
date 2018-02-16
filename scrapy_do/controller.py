@@ -43,7 +43,9 @@ class Event(Enum):
     """
     Controller even type.
     """
-    DAEMON_STATUS_CHANGE = 1
+    DAEMON_STATUS_CHANGE = 1,
+    PROJECT_PUSH = 2,
+    PROJECT_REMOVE = 3
 
 
 #-------------------------------------------------------------------------------
@@ -267,6 +269,8 @@ class Controller(Service):
 
         self.log.info('Added project "{}" with spiders {}'.format(
             name, prj.spiders))
+
+        self.dispatch_event(Event.PROJECT_PUSH, prj)
         returnValue(prj)
 
     #---------------------------------------------------------------------------
@@ -606,6 +610,7 @@ class Controller(Service):
         os.remove(self.projects[name].archive)
         del self.projects[name]
         self.log.info('Project "{}" removed'.format(name))
+        self.dispatch_event(Event.PROJECT_REMOVE, name)
 
     #---------------------------------------------------------------------------
     def add_event_listener(self, listener):
