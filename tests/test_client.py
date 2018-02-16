@@ -201,9 +201,7 @@ class ClientTests(unittest.TestCase):
         with patch('scrapy_do.client.commands.build_project_archive') as bpa:
             bpa.return_value = ('foo', 'bar')
             payload = cmd.push_project_arg_process(args)
-        self.assertIn('name', payload)
         self.assertIn('archive', payload)
-        self.assertEqual(payload['name'], 'foo')
         self.assertEqual(payload['archive'], 'bar')
         args.project_path = '/'
         with patch('scrapy_do.client.commands.build_project_archive') as bpa:
@@ -317,9 +315,9 @@ class ClientTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Push project
         #-----------------------------------------------------------------------
-        rsp = {'spiders': ['spider1', 'spider2']}
+        rsp = {'spiders': ['spider1', 'spider2'], 'name': 'project'}
         ret = cmd.push_project_rsp_parse(rsp)
-        self.assertIn('spiders', ret['headers'])
+        self.assertIn('project', ret['headers'])
         self.assertIn(['spider1'], ret['data'])
         self.assertIn(['spider2'], ret['data'])
 
