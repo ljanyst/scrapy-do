@@ -23,7 +23,7 @@ import {
   BACKEND_CONNECTING, BACKEND_OPENED, BACKEND_CLOSED
 } from './actions/backend';
 import { backend, Backend } from './utils/Backend';
-import { messageStoreEvent } from './utils/backend-store-connectors';
+import { messageStoreEvent } from './utils/backendStoreConnectors';
 
 import ScrapyDoApp from './components/ScrapyDoApp';
 
