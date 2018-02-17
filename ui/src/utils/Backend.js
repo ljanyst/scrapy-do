@@ -18,6 +18,8 @@ export class Backend {
   static MSG_RECEIVED = 3;
   static COUNTDOWN = 4;
 
+  static REMOVE_LISTENER = 0;
+
   //----------------------------------------------------------------------------
   // Constructor
   //----------------------------------------------------------------------------
@@ -53,8 +55,7 @@ export class Backend {
     //--------------------------------------------------------------------------
     // Attempt the connection
     //--------------------------------------------------------------------------
-    for(const listener of this.eventListeners)
-      listener(Backend.CONNECTING, null);
+    this.dispatchEvent(Backend.CONNECTING, null);
 
     this.ws = new WebSocket(this.wsUrl);
 
@@ -62,8 +63,7 @@ export class Backend {
     // On open
     //--------------------------------------------------------------------------
     this.ws.onopen = () => {
-      for(const listener of this.eventListeners)
-        listener(Backend.OPENED, null);
+      this.dispatchEvent(Backend.OPENED, null);
       this.nextTry = 2;
     };
 
@@ -72,16 +72,14 @@ export class Backend {
     //--------------------------------------------------------------------------
     this.ws.onmessage = (evt) => {
       const message = JSON.parse(evt.data);
-      for(const listener of this.eventListeners)
-        listener(Backend.MSG_RECEIVED, message);
+      this.dispatchEvent(Backend.MSG_RECEIVED, message);
     };
 
     //--------------------------------------------------------------------------
     // On Close
     //--------------------------------------------------------------------------
     this.ws.onclose = () => {
-      for(const listener of this.eventListeners)
-        listener(Backend.CLOSED, null);
+      this.dispatchEvent(Backend.CLOSED, null);
 
       this.ws = null;
       this.nextTry *= 2;
@@ -89,12 +87,10 @@ export class Backend {
         this.nextTry = 256;
       this.countdown = this.nextTry - 1;
 
-      for(const listener of this.eventListeners)
-        listener(Backend.COUNTDOWN, this.countdown + 1);
+      this.dispatchEvent(Backend.COUNTDOWN, this.countdown + 1);
 
       const tick = () => {
-        for(const listener of this.eventListeners)
-          listener(Backend.COUNTDOWN, this.countdown);
+        this.dispatchEvent(Backend.COUNTDOWN, this.countdown);
         if(this.countdown === 0) {
           this.connect();
           return;
@@ -117,6 +113,20 @@ export class Backend {
   //----------------------------------------------------------------------------
   removeEventListener = (listener) => {
     this.eventListeners.delete(listener);
+  }
+
+  //----------------------------------------------------------------------------
+  // Dispatch event
+  //----------------------------------------------------------------------------
+  dispatchEvent = (event, data) => {
+    let toRemove = [];
+    for(const listener of this.eventListeners) {
+      let ret = listener(event, data);
+      if(ret === Backend.REMOVE_LISTENER)
+        toRemove.push(listener);
+    }
+    for(const listener of toRemove)
+      this.removeEventListener(listener);
   }
 };
 
