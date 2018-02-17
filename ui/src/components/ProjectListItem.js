@@ -9,6 +9,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { Button, Glyphicon, Panel } from 'react-bootstrap';
+import Dialog from 'react-bootstrap-dialog';
 
 //------------------------------------------------------------------------------
 // Project List Item
@@ -22,18 +23,36 @@ class ProjectListItem extends Component {
   }
 
   //----------------------------------------------------------------------------
+  // Show remove dialog
+  //----------------------------------------------------------------------------
+  showRemoveDialog = () => {
+    const project = this.props;
+    this.dialog.show({
+      body: `Are you sure you want to remove project "${project.name}".`,
+      actions: [
+        Dialog.CancelAction(),
+        Dialog.OKAction(() => {
+          console.log('Remove', project.name);
+        })
+      ]
+    });
+  };
+
+  //----------------------------------------------------------------------------
   // Render
   //----------------------------------------------------------------------------
   render() {
     const project = this.props;
     return(
       <Panel>
+        <Dialog ref={(el) => { this.dialog = el; }} />
         <Panel.Heading >
           <div className='list-item'>
             <div className='item-panel'>
               <Button
                 bsSize="xsmall"
-                onClick={() => {}}>
+                onClick={this.showRemoveDialog}
+              >
                 <Glyphicon glyph='trash'/> Remove
               </Button>
             </div>
