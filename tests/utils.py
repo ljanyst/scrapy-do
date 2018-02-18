@@ -6,6 +6,7 @@
 #-------------------------------------------------------------------------------
 
 import hashlib
+import json
 
 from twisted.internet.protocol import Protocol
 from twisted.web.http_headers import Headers
@@ -135,3 +136,9 @@ def web_retrieve_async(method, url, headers=None, body_producer=None,
 
     d.addCallbacks(cb_response, cb_error)
     return finished
+
+
+#-------------------------------------------------------------------------------
+def json_encode(data):
+    data = json.dumps(data)
+    return data.encode('utf-8')
