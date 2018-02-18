@@ -109,7 +109,7 @@ class WSProtocol(WebSocketServerProtocol):
         self.sendMessage(data)
 
     #---------------------------------------------------------------------------
-    def send_response(self, msg_id, data = {}):
+    def send_response(self, msg_id, data={}):
         data['id'] = msg_id
         data['type'] = 'ACTION_EXECUTED'
         if 'status' not in data:
