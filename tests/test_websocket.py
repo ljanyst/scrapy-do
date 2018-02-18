@@ -18,7 +18,7 @@ from datetime import datetime
 class WebSocketTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
-    def test_server_status(self):
+    def setUp(self):
         controller = Mock()
         controller.counter_run = 0
         controller.start_time.timestamp.return_value = 0
@@ -33,14 +33,22 @@ class WebSocketTests(unittest.TestCase):
         controller.get_spiders.return_value = ['foo', 'bar']
         factory = WSFactory(controller=controller)
         factory.protocol = WSProtocol
-        protocol = factory.buildProtocol(None)
+        self.protocol = factory.buildProtocol(None)
 
+    #---------------------------------------------------------------------------
+    def test_server_status(self):
+        protocol = self.protocol
         with patch.object(WSProtocol, "sendMessage"):
             protocol.onOpen()
             protocol.onMessage(None, None)
             protocol.onClose(None, None, None)
             protocol.on_controller_event(ControllerEvent.DAEMON_STATUS_CHANGE,
                                          None)
+
+    #---------------------------------------------------------------------------
+    def test_project_handling(self):
+        protocol = self.protocol
+        with patch.object(WSProtocol, "sendMessage"):
             project = Project('project', None, ['spider1', 'spider2'])
             protocol.on_controller_event(ControllerEvent.PROJECT_PUSH,
                                          project)
