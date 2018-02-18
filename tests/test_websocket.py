@@ -12,6 +12,7 @@ from scrapy_do.controller import Project
 from scrapy_do.websocket import WSFactory, WSProtocol
 from unittest.mock import Mock, patch
 from datetime import datetime
+from .utils import json_encode
 
 
 #-------------------------------------------------------------------------------
@@ -19,7 +20,8 @@ class WebSocketTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def setUp(self):
-        controller = Mock()
+        self.controller = Mock()
+        controller = self.controller
         controller.counter_run = 0
         controller.start_time.timestamp.return_value = 0
         controller.projects = {}
@@ -61,9 +63,31 @@ class WebSocketTests(unittest.TestCase):
     #---------------------------------------------------------------------------
     def test_project_handling(self):
         protocol = self.protocol
+        controller = self.controller
         with patch.object(WSProtocol, "sendMessage"):
+            #-------------------------------------------------------------------
+            # Test controller events
+            #-------------------------------------------------------------------
             project = Project('project', None, ['spider1', 'spider2'])
             protocol.on_controller_event(ControllerEvent.PROJECT_PUSH,
                                          project)
             protocol.on_controller_event(ControllerEvent.PROJECT_REMOVE,
                                          'project')
+
+            #-------------------------------------------------------------------
+            # Test PROJECT_REMOVE_ACTION
+            #-------------------------------------------------------------------
+            msg = {
+                'type': 'ACTION',
+                'action': 'PROJECT_REMOVE',
+                'id': 'foo'
+            }
+            data = json_encode(msg)
+            protocol.onMessage(data, False)
+
+            msg['name'] = 'foo'
+            data = json_encode(msg)
+            protocol.onMessage(data, False)
+
+            controller.remove_project.side_effect = ValueError('foo')
+            protocol.onMessage(data, False)
