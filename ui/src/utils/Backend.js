@@ -5,6 +5,8 @@
 // Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 //------------------------------------------------------------------------------
 
+import { makeId } from './helpers';
+
 //------------------------------------------------------------------------------
 // Backend
 //------------------------------------------------------------------------------
@@ -127,6 +129,67 @@ export class Backend {
     }
     for(const listener of toRemove)
       this.removeEventListener(listener);
+  }
+
+  //----------------------------------------------------------------------------
+  // Send message
+  //----------------------------------------------------------------------------
+  sendMessage = (message) => {
+    //--------------------------------------------------------------------------
+    // Only send messages if we're connected
+    //--------------------------------------------------------------------------
+    if(!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      return Promise.reject(new Error('Backend not connected.'));
+
+    //--------------------------------------------------------------------------
+    // Wrap the message
+    //--------------------------------------------------------------------------
+    const id = makeId(32);
+    const newMessage = Object.assign(message, {
+      type: 'ACTION',
+      id
+    });
+
+    return new Promise((resolve, reject) => {
+      //------------------------------------------------------------------------
+      // Listener handling the answer
+      //------------------------------------------------------------------------
+      const listener = (event, data) => {
+        //----------------------------------------------------------------------
+        // Disconnected, the answer will never arrive
+        //----------------------------------------------------------------------
+        if(event === Backend.CLOSED)
+          reject(new Error('Backend disconnected'));
+
+        //----------------------------------------------------------------------
+        // We got the response
+        //----------------------------------------------------------------------
+        if(event === Backend.MSG_RECEIVED && data.type === 'ACTION_EXECUTED'
+           && data.id === id) {
+
+          if(data.status === 'OK') {
+            let cleanData = Object.assign(data);
+            delete cleanData.type;
+            delete cleanData.id;
+            delete cleanData.status;
+            resolve(cleanData);
+          }
+          else
+            reject(new Error(data.message));
+        }
+
+        //----------------------------------------------------------------------
+        // Remove this listener
+        //----------------------------------------------------------------------
+        return Backend.REMOVE_LISTENER;
+      };
+
+      //------------------------------------------------------------------------
+      // Register the resposne listener and send the message
+      //------------------------------------------------------------------------
+      this.addEventListener(listener);
+      this.ws.send(JSON.stringify(newMessage));
+    });
   }
 };
 
