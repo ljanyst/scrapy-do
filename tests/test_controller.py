@@ -515,8 +515,8 @@ class ControllerTests(unittest.TestCase):
         try:
             controller.remove_project('foo')
             self.fail('Removing a non-existent project risen an exception')
-        except KeyError as e:
-            self.assertTrue(str(e).startswith("'No such project"))
+        except ValueError as e:
+            self.assertTrue(str(e).startswith("No such project"))
 
         try:
             controller.remove_project('quotesbot')
