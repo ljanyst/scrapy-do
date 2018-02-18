@@ -11,6 +11,8 @@ import PropTypes from 'prop-types';
 import { Button, Glyphicon, Panel } from 'react-bootstrap';
 import Dialog from 'react-bootstrap-dialog';
 
+import { removeProject } from '../utils/backendActions';
+
 //------------------------------------------------------------------------------
 // Project List Item
 //------------------------------------------------------------------------------
@@ -28,12 +30,19 @@ class ProjectListItem extends Component {
   showRemoveDialog = () => {
     const project = this.props;
     this.dialog.show({
-      body: `Are you sure you want to remove project "${project.name}".`,
+      body: `Are you sure you want to remove project "${project.name}"?`,
       actions: [
         Dialog.CancelAction(),
-        Dialog.OKAction(() => {
-          console.log('Remove', project.name);
-        })
+        Dialog.Action(
+          'Remove',
+          () => {
+            removeProject(project.name)
+              .catch((error) => {
+                setTimeout(() => this.dialog.showAlert(error.message), 250);
+              });
+          },
+          'btn-danger'
+        )
       ]
     });
   };
