@@ -609,6 +609,9 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         os.remove(self.projects[name].archive)
         del self.projects[name]
+        with open(self.metadata_path, 'wb') as f:
+            pickle.dump(self.projects, f)
+
         self.log.info('Project "{}" removed'.format(name))
         self.dispatch_event(Event.PROJECT_REMOVE, name)
 
