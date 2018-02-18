@@ -48,7 +48,7 @@ class WSProtocol(WebSocketServerProtocol):
     def __init__(self, *args, **kwargs):
         super(WSProtocol, self).__init__(*args, **kwargs)
         self.actionHandlers = {}
-        self.actionHandlers['REMOVE_PROJECT'] = self.remove_project
+        self.actionHandlers['PROJECT_REMOVE'] = self.remove_project
 
     #---------------------------------------------------------------------------
     def onOpen(self):
