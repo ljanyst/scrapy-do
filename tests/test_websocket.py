@@ -46,6 +46,19 @@ class WebSocketTests(unittest.TestCase):
                                          None)
 
     #---------------------------------------------------------------------------
+    def test_action_messages(self):
+        protocol = self.protocol
+        with patch.object(WSProtocol, "sendMessage"):
+            protocol.onMessage(None, True)
+            protocol.onMessage(b'foo', False)
+            protocol.onMessage(b'{}', False)
+            protocol.onMessage(b'{"id": "foo"}', False)
+            protocol.onMessage(b'{"id": "foo", "type": "bar", "action": "baz"}',
+                               False)
+            protocol.onMessage(b'{"id": "a", "type": "ACTION", "action": "b"}',
+                               False)
+
+    #---------------------------------------------------------------------------
     def test_project_handling(self):
         protocol = self.protocol
         with patch.object(WSProtocol, "sendMessage"):
