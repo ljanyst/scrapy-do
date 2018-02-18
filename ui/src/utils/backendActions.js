@@ -10,9 +10,9 @@ import { backend } from './Backend';
 //------------------------------------------------------------------------------
 // Remove project
 //------------------------------------------------------------------------------
-export function removeProject(name) {
+export function projectRemove(name) {
   return backend.sendMessage({
-    action: 'REMOVE_PROJECT',
+    action: 'PROJECT_REMOVE',
     name
   });
 }

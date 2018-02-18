@@ -11,7 +11,7 @@ import PropTypes from 'prop-types';
 import { Button, Glyphicon, Panel } from 'react-bootstrap';
 import Dialog from 'react-bootstrap-dialog';
 
-import { removeProject } from '../utils/backendActions';
+import { projectRemove } from '../utils/backendActions';
 
 //------------------------------------------------------------------------------
 // Project List Item
@@ -36,7 +36,7 @@ class ProjectListItem extends Component {
         Dialog.Action(
           'Remove',
           () => {
-            removeProject(project.name)
+            projectRemove(project.name)
               .catch((error) => {
                 setTimeout(() => this.dialog.showAlert(error.message), 250);
               });
