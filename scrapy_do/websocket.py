@@ -17,6 +17,7 @@ from autobahn.twisted.websocket import WebSocketServerProtocol
 from autobahn.twisted.websocket import WebSocketServerFactory
 from dateutil.relativedelta import relativedelta
 from scrapy_do.controller import Event as ControllerEvent
+from twisted.logger import Logger
 from scrapy_do import __version__
 from datetime import datetime
 from tzlocal import get_localzone
@@ -41,6 +42,13 @@ class WSFactory(WebSocketServerFactory):
 #-------------------------------------------------------------------------------
 class WSProtocol(WebSocketServerProtocol):
 
+    wslog = Logger()
+
+    #---------------------------------------------------------------------------
+    def __init__(self, *args, **kwargs):
+        super(WSProtocol, self).__init__(*args, **kwargs)
+        self.actionHandlers = {}
+
     #---------------------------------------------------------------------------
     def onOpen(self):
         self.send_daemon_status()
@@ -51,7 +59,43 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def onMessage(self, payload, isBinary):
-        pass
+        #-----------------------------------------------------------------------
+        # Check the message validity
+        #-----------------------------------------------------------------------
+        if isBinary:
+            return
+
+        try:
+            payload = payload.decode('utf-8')
+            data = json.loads(payload)
+        except Exception as e:
+            self.wslog.debug('Unable to parse message: {}.'.format(str(e)))
+            return
+
+        for header in ['type', 'action', 'id']:
+            if header not in data:
+                msg = 'Header "{}" is missing.'.format(header)
+                self.wslog.debug(msg)
+                if 'id' in data:
+                    self.send_error_response(data['id'], msg)
+                return
+
+        if data['type'] != 'ACTION':
+            msg = 'Rejecting non-action message: {}.'.format(data['type'])
+            self.wslog.debug(msg)
+            self.send_error_response(data['id'], msg)
+            return
+
+        if data['action'] not in self.actionHandlers:
+            msg = 'Unknown action: {}.'.format(data['action'])
+            self.wslog.debug(msg)
+            self.send_error_response(data['id'], msg)
+            return
+
+        #-----------------------------------------------------------------------
+        # Execute the action
+        #-----------------------------------------------------------------------
+        self.actionHandlers[data['action']](data)
 
     #---------------------------------------------------------------------------
     def onClose(self, wasClean, code, reason):
@@ -62,6 +106,22 @@ class WSProtocol(WebSocketServerProtocol):
         data = json.dumps(msg) + '\n'
         data = data.encode('utf-8')
         self.sendMessage(data)
+
+    #---------------------------------------------------------------------------
+    def send_response(self, msg_id, data = {}):
+        data['id'] = msg_id
+        data['type'] = 'ACTION_EXECUTED'
+        if 'status' not in data:
+            data['status'] = 'OK'
+        self.send_json(data)
+
+    #---------------------------------------------------------------------------
+    def send_error_response(self, msg_id, error_msg):
+        data = {
+            'status': 'ERROR',
+            'message': error_msg
+        }
+        self.send_response(msg_id, data)
 
     #---------------------------------------------------------------------------
     def send_daemon_status(self):
