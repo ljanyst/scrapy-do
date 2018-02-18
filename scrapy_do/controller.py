@@ -594,7 +594,7 @@ class Controller(Service):
         # Consistency checks
         #-----------------------------------------------------------------------
         if name not in self.projects:
-            raise KeyError('No such project: "{}"'.format(name))
+            raise ValueError('No such project: "{}"'.format(name))
 
         sched_jobs = self.schedule.get_scheduled_jobs(name)
         if len(sched_jobs) != 0:
