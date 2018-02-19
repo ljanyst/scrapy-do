@@ -5,14 +5,16 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
-import unittest
+import base64
 
+from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.controller import Event as ControllerEvent
 from scrapy_do.controller import Project
 from scrapy_do.websocket import WSFactory, WSProtocol
 from unittest.mock import Mock, patch
+from twisted.trial import unittest
 from datetime import datetime
-from .utils import json_encode
+from .utils import json_encode, make_deferred_func
 
 
 #-------------------------------------------------------------------------------
@@ -61,10 +63,11 @@ class WebSocketTests(unittest.TestCase):
                                False)
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
     def test_project_handling(self):
         protocol = self.protocol
         controller = self.controller
-        with patch.object(WSProtocol, "sendMessage"):
+        with patch.object(WSProtocol, "sendMessage") as send_message:
             #-------------------------------------------------------------------
             # Test controller events
             #-------------------------------------------------------------------
@@ -91,3 +94,32 @@ class WebSocketTests(unittest.TestCase):
 
             controller.remove_project.side_effect = ValueError('foo')
             protocol.onMessage(data, False)
+
+            #-------------------------------------------------------------------
+            # Test PROJECT_PUSH
+            #-------------------------------------------------------------------
+            d = Deferred()
+            send_message.side_effect = make_deferred_func(d)
+            msg = {
+                'type': 'ACTION',
+                'action': 'PROJECT_PUSH',
+                'id': 'foo'
+            }
+            data = json_encode(msg)
+            protocol.onMessage(data, False)
+            yield d
+
+            msg['archiveData'] = 'foo'
+            data = json_encode(msg)
+            d = Deferred()
+            send_message.side_effect = make_deferred_func(d)
+            protocol.onMessage(data, False)
+            yield d
+
+            msg['archiveData'] = base64.b64encode(b'foo').decode('utf-8')
+            controller.push_project.return_value = Project('foo', None, [])
+            data = json_encode(msg)
+            d = Deferred()
+            send_message.side_effect = make_deferred_func(d)
+            protocol.onMessage(data, False)
+            yield d
