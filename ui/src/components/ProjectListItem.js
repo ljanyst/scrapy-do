@@ -11,6 +11,7 @@ import PropTypes from 'prop-types';
 import { Button, Glyphicon, Panel } from 'react-bootstrap';
 import Dialog from 'react-bootstrap-dialog';
 
+import { BACKEND_OPENED } from '../actions/backend';
 import { projectRemove } from '../utils/backendActions';
 
 //------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ class ProjectListItem extends Component {
             <div className='item-panel'>
               <Button
                 bsSize="xsmall"
+                disabled={!this.props.connected}
                 onClick={this.showRemoveDialog}
               >
                 <Glyphicon glyph='trash'/> Remove
@@ -71,7 +73,11 @@ class ProjectListItem extends Component {
         <Panel.Body>
           <div className='spider-list'>
             {project.spiders.map(spider => (
-              <Button bsSize="xsmall" key={spider}>
+              <Button
+                bsSize="xsmall"
+                disabled={!this.props.connected}
+                key={spider}
+              >
                 <Glyphicon glyph='flash'/> {spider}
               </Button>
             ))}
@@ -87,7 +93,8 @@ class ProjectListItem extends Component {
 //------------------------------------------------------------------------------
 function mapStateToProps(state, ownProps) {
   return {
-    ...state.projects[ownProps.projectName]
+    ...state.projects[ownProps.projectName],
+    connected: state.backend.status === BACKEND_OPENED
   };
 }
 

@@ -9,6 +9,8 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Panel, Button, Glyphicon } from 'react-bootstrap';
 
+import { BACKEND_OPENED } from '../actions/backend';
+
 import ProjectListItem from './ProjectListItem';
 
 //------------------------------------------------------------------------------
@@ -39,9 +41,12 @@ class ProjectList extends Component {
       <div className='col-md-8 col-md-offset-2'>
         <h2>Projects</h2>
         <div className='control-button-container'>
-          <Button bsSize="xsmall"
-          onClick={() => {
-          }}>
+          <Button
+            bsSize="xsmall"
+            disabled={!this.props.connected}
+            onClick={() => {
+            }}
+          >
           <Glyphicon glyph='upload'/> Push project
         </Button>
         </div>
@@ -56,7 +61,8 @@ class ProjectList extends Component {
 //------------------------------------------------------------------------------
 function mapStateToProps(state, ownProps) {
   return {
-    projects: Object.keys(state.projects).sort()
+    projects: Object.keys(state.projects).sort(),
+    connected: state.backend.status === BACKEND_OPENED
   };
 }
 
