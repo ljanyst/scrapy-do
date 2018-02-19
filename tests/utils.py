@@ -142,3 +142,10 @@ def web_retrieve_async(method, url, headers=None, body_producer=None,
 def json_encode(data):
     data = json.dumps(data)
     return data.encode('utf-8')
+
+
+#-------------------------------------------------------------------------------
+def make_deferred_func(d):
+    def func(*args, **kwargs):
+        d.callback(None)
+    return func
