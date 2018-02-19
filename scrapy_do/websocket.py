@@ -9,6 +9,7 @@ import functools
 import calendar
 import socket
 import psutil
+import base64
 import time
 import json
 import os
@@ -16,6 +17,7 @@ import os
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from autobahn.twisted.websocket import WebSocketServerFactory
 from dateutil.relativedelta import relativedelta
+from twisted.internet.defer import inlineCallbacks
 from scrapy_do.controller import Event as ControllerEvent
 from twisted.logger import Logger
 from scrapy_do import __version__
@@ -49,6 +51,7 @@ class WSProtocol(WebSocketServerProtocol):
         super(WSProtocol, self).__init__(*args, **kwargs)
         self.actionHandlers = {}
         self.actionHandlers['PROJECT_REMOVE'] = self.project_remove
+        self.actionHandlers['PROJECT_PUSH'] = self.project_push
 
     #---------------------------------------------------------------------------
     def onOpen(self):
@@ -223,5 +226,22 @@ class WSProtocol(WebSocketServerProtocol):
         try:
             self.controller.remove_project(data['name'])
             self.send_response(data['id'])
+        except Exception as e:
+            self.send_error_response(data['id'], str(e))
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def project_push(self, data):
+        if 'archiveData' not in data:
+            self.send_error_response(data['id'], 'Project name not specified.')
+            return
+
+        try:
+            archiveData = base64.b64decode(data['archiveData'])
+            project = yield self.controller.push_project(archiveData)
+            msg = {
+                'name': project.name
+            }
+            self.send_response(data['id'], msg)
         except Exception as e:
             self.send_error_response(data['id'], str(e))
