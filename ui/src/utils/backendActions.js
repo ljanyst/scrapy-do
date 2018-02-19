@@ -16,3 +16,13 @@ export function projectRemove(name) {
     name
   });
 }
+
+//------------------------------------------------------------------------------
+// Push project
+//------------------------------------------------------------------------------
+export function projectPush(archiveData) {
+  return backend.sendMessage({
+    action: 'PROJECT_PUSH',
+    archiveData
+  });
+}
