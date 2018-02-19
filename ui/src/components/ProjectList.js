@@ -8,8 +8,10 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Panel, Button, Glyphicon } from 'react-bootstrap';
+import Dialog from 'react-bootstrap-dialog';
 
 import { BACKEND_OPENED } from '../actions/backend';
+import { projectPush } from '../utils/backendActions';
 
 import ProjectListItem from './ProjectListItem';
 
@@ -17,6 +19,60 @@ import ProjectListItem from './ProjectListItem';
 // Project List
 //------------------------------------------------------------------------------
 class ProjectList extends Component {
+  //----------------------------------------------------------------------------
+  // File picker change event
+  //----------------------------------------------------------------------------
+  fileSelectorChange = (event) => {
+    const files = event.target.files;
+    if(!files.length)
+      return;
+
+    this.archivePromise = new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsBinaryString(files[0]);
+      reader.onload = () => resolve(btoa(reader.result));
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  //----------------------------------------------------------------------------
+  // Show push dialog
+  //----------------------------------------------------------------------------
+  showPushDialog = () => {
+    const content = (
+      <div>
+        <label>Choose a project archive:</label>
+        <input type='file' id='filePicker' accept='.zip'
+               onChange={this.fileSelectorChange}/>
+      </div>
+    );
+    this.dialog.show({
+      body: content,
+      actions: [
+        Dialog.CancelAction(),
+        Dialog.Action(
+          'Push',
+          () => {
+            if(!this.archivePromise) {
+              setTimeout(() => this.dialog.showAlert('No file selected.'), 250);
+              return;
+            }
+            this.archivePromise
+              .then(result => projectPush(result))
+              .then(() => { this.archivePromise = null; })
+              .catch(error => {
+                setTimeout(() => this.dialog.showAlert(error.message), 250);
+              });
+          },
+          'btn-primary'
+        )
+      ]
+    });
+  };
+
+  //----------------------------------------------------------------------------
+  // Render
+  //----------------------------------------------------------------------------
   render() {
     const projectNames = this.props.projects;
 
@@ -39,13 +95,13 @@ class ProjectList extends Component {
 
     return(
       <div className='col-md-8 col-md-offset-2'>
+        <Dialog ref={(el) => { this.dialog = el; }} />
         <h2>Projects</h2>
         <div className='control-button-container'>
           <Button
             bsSize="xsmall"
             disabled={!this.props.connected}
-            onClick={() => {
-            }}
+            onClick={this.showPushDialog}
           >
           <Glyphicon glyph='upload'/> Push project
         </Button>
