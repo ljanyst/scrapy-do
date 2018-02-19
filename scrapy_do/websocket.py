@@ -48,7 +48,7 @@ class WSProtocol(WebSocketServerProtocol):
     def __init__(self, *args, **kwargs):
         super(WSProtocol, self).__init__(*args, **kwargs)
         self.actionHandlers = {}
-        self.actionHandlers['PROJECT_REMOVE'] = self.remove_project
+        self.actionHandlers['PROJECT_REMOVE'] = self.project_remove
 
     #---------------------------------------------------------------------------
     def onOpen(self):
@@ -215,7 +215,7 @@ class WSProtocol(WebSocketServerProtocol):
             self.send_projects_status()
 
     #---------------------------------------------------------------------------
-    def remove_project(self, data):
+    def project_remove(self, data):
         if 'name' not in data:
             self.send_error_response(data['id'], 'Project name not specified.')
             return
