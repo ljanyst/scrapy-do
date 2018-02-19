@@ -158,8 +158,10 @@ export class Backend {
         //----------------------------------------------------------------------
         // Disconnected, the answer will never arrive
         //----------------------------------------------------------------------
-        if(event === Backend.CLOSED)
+        if(event === Backend.CLOSED) {
           reject(new Error('Backend disconnected'));
+          return Backend.REMOVE_LISTENER;
+        }
 
         //----------------------------------------------------------------------
         // We got the response
@@ -176,12 +178,11 @@ export class Backend {
           }
           else
             reject(new Error(data.message));
+
+          return Backend.REMOVE_LISTENER;
         }
 
-        //----------------------------------------------------------------------
-        // Remove this listener
-        //----------------------------------------------------------------------
-        return Backend.REMOVE_LISTENER;
+        return null;
       };
 
       //------------------------------------------------------------------------
