@@ -208,6 +208,13 @@ class ClientTests(unittest.TestCase):
             bpa.return_value = ('foo', 'bar')
             payload = cmd.push_project_arg_process(args)
 
+        with patch('scrapy_do.client.commands.build_project_archive') as bpa:
+            bpa.side_effect = FileNotFoundError('foo')
+            with patch('sys.exit') as exit:
+                with patch('builtins.print'):
+                    cmd.push_project_arg_process(args)
+                    exit.assert_called_once()
+
         #-----------------------------------------------------------------------
         # Schedule job
         #-----------------------------------------------------------------------
