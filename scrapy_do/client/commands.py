@@ -9,6 +9,7 @@ import sys
 import os
 
 from scrapy_do.client.archive import build_project_archive
+from scrapy_do.utils import exc_repr
 from collections import namedtuple
 
 
@@ -178,8 +179,12 @@ def push_project_arg_process(args):
         path = os.path.join(path, args.project_path)
         path = os.path.normpath(path)
 
-    _, archive = build_project_archive(path)
-    return {'archive': archive}
+    try:
+        _, archive = build_project_archive(path)
+        return {'archive': archive}
+    except Exception as e:
+        print('[!] Unable to create archive:', exc_repr(e))
+        sys.exit(1)
 
 
 def push_project_rsp_parse(rsp):
