@@ -18,6 +18,7 @@ import { Provider } from 'react-redux';
 import { backendReducer } from './reducers/backend';
 import { statusReducer } from './reducers/status';
 import { projectsReducer } from './reducers/projects';
+import { jobsReducer } from './reducers/jobs';
 import {
   backendStatusSet, backendCountdownSet,
   BACKEND_CONNECTING, BACKEND_OPENED, BACKEND_CLOSED
@@ -34,7 +35,8 @@ export const store = createStore(
   combineReducers({
     backend: backendReducer,
     status: statusReducer,
-    projects: projectsReducer
+    projects: projectsReducer,
+    jobs: jobsReducer
   }),
   window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
 );
