@@ -6,15 +6,93 @@
 //------------------------------------------------------------------------------
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Panel, Button, Glyphicon, ListGroup } from 'react-bootstrap';
 
+import { BACKEND_OPENED } from '../actions/backend';
+
+import JobListItem from './JobListItem';
+
+//------------------------------------------------------------------------------
+// Job list
+//------------------------------------------------------------------------------
 class JobList extends Component {
+  //----------------------------------------------------------------------------
+  // Render
+  //----------------------------------------------------------------------------
   render() {
+    const jobIds = this.props.jobs;
+    const status = this.props.match.params.status;
+    const jobStatus = status.charAt(0).toUpperCase() + status.slice(1);
+
+    //--------------------------------------------------------------------------
+    // Job list
+    //--------------------------------------------------------------------------
+    let list = (
+      <Panel>
+        <div className='list-empty'>No jobs.</div>
+      </Panel>
+    );
+    if(jobIds.length) {
+      list = (
+        <ListGroup>
+          {jobIds.map(jobId => (
+            <JobListItem
+              key={jobId}
+              jobId={jobId}
+              jobList={jobStatus.toUpperCase()}
+            />
+          ))}
+        </ListGroup>
+      );
+    }
+
+    //--------------------------------------------------------------------------
+    // Schedule button
+    //--------------------------------------------------------------------------
+    let scheduleButton = (
+      <div className='control-button-container'>
+        <Button
+          bsSize="xsmall"
+          disabled={!this.props.connected}
+          >
+          <Glyphicon glyph='calendar'/> Schedule a job
+        </Button>
+      </div>
+    );
+
+    if(status === 'completed')
+      scheduleButton = null;
+
+    //--------------------------------------------------------------------------
+    // The container
+    //--------------------------------------------------------------------------
     return(
-      <div>
-        JobList {this.props.match.params.status}
+      <div className='col-md-8 col-md-offset-2'>
+        <h2>{jobStatus } Jobs</h2>
+        {scheduleButton}
+        {list}
       </div>
     );
   }
 }
 
-export default JobList;
+//------------------------------------------------------------------------------
+// The redux connection
+//------------------------------------------------------------------------------
+function mapStateToProps(state, ownProps) {
+  const jobStatus = ownProps.match.params.status.toUpperCase();
+  let jobs = [];
+  if(jobStatus in state.jobs)
+    jobs = Object.keys(state.jobs[jobStatus]).sort();
+  return {
+    jobs,
+    connected: state.backend.status === BACKEND_OPENED
+  };
+}
+
+function mapDispatchToProps(dispatch) {
+  return {};
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(JobList);
