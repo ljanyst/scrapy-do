@@ -59,6 +59,8 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_projects_status()
         self.send_jobs_status()
         self.send_project_list()
+        self.send_job_list('ACTIVE')
+        self.send_job_list('COMPLETED')
         self.controller.add_event_listener(self.on_controller_event)
 
     #---------------------------------------------------------------------------
@@ -203,6 +205,21 @@ class WSProtocol(WebSocketServerProtocol):
         msg = {
             'type': 'PROJECT_REMOVE',
             'name': name
+        }
+        self.send_json(msg)
+
+    #---------------------------------------------------------------------------
+    def send_job_list(self, status):
+        jobs = []
+        if status == 'ACTIVE':
+            jobs = self.controller.get_active_jobs()
+        elif status == 'COMPLETED':
+            jobs = self.controller.get_completed_jobs()
+
+        msg = {
+            'type': 'JOB_LIST',
+            'status': status,
+            'jobs': [job.to_dict() for job in jobs]
         }
         self.send_json(msg)
 
