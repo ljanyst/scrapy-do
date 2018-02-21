@@ -10,6 +10,7 @@ import base64
 from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.controller import Event as ControllerEvent
 from scrapy_do.controller import Project
+from scrapy_do.schedule import Job, Status, Actor
 from scrapy_do.websocket import WSFactory, WSProtocol
 from unittest.mock import Mock, patch
 from twisted.trial import unittest
@@ -35,6 +36,10 @@ class WebSocketTests(unittest.TestCase):
         controller.start_time = datetime.now()
         controller.get_projects.return_value = ['foo', 'bar']
         controller.get_spiders.return_value = ['foo', 'bar']
+        active_jobs = [Job(status=Status.PENDING, actor=Actor.USER)]
+        controller.get_active_jobs.return_value = active_jobs
+        completed_jobs = [Job(status=Status.CANCELED, actor=Actor.USER)]
+        controller.get_completed_jobs.return_value = completed_jobs
         factory = WSFactory(controller=controller)
         factory.protocol = WSProtocol
         self.protocol = factory.buildProtocol(None)
