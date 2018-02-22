@@ -16,7 +16,7 @@ import moment from 'moment-timezone';
 class Dashboard extends Component {
   render() {
     const serverTime = moment.unix(this.props.time)
-          .tz('Europe/Zurich').format('YYYY-MM-DD HH:mm');
+          .tz(this.props.timezone).format('YYYY-MM-DD HH:mm');
     return(
       <div className='col-md-6 col-md-offset-3'>
         <div className='dashboard-content'>
