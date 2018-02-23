@@ -8,6 +8,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Panel, Button, Glyphicon, ListGroup } from 'react-bootstrap';
+import sortBy from 'sort-by';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
@@ -83,8 +84,12 @@ class JobList extends Component {
 function mapStateToProps(state, ownProps) {
   const jobStatus = ownProps.match.params.status.toUpperCase();
   let jobs = [];
-  if(jobStatus in state.jobs)
-    jobs = Object.keys(state.jobs[jobStatus]).sort();
+  if(jobStatus in state.jobs) {
+    jobs = Object.keys(state.jobs[jobStatus])
+      .map(key => state.jobs[jobStatus][key])
+      .sort(sortBy('-timestamp'))
+      .map(obj => obj.identifier);
+  }
   return {
     jobs,
     connected: state.backend.status === BACKEND_OPENED
