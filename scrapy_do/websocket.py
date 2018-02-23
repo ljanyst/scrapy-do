@@ -209,6 +209,19 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_json(msg)
 
     #---------------------------------------------------------------------------
+    def process_job(self, job):
+        job_dict = job.to_dict()
+        logs = self.controller.get_job_logs(job.identifier)
+        job_dict['timestamp'] = time.mktime(job.timestamp.timetuple())
+        job_dict['outLog'] = False
+        job_dict['errLog'] = False
+        if logs[0] is not None:
+            job_dict['outLog'] = True
+        if logs[1] is not None:
+            job_dict['errLog'] = True
+        return job_dict
+
+    #---------------------------------------------------------------------------
     def send_job_list(self, status):
         jobs = []
         if status == 'ACTIVE':
@@ -219,7 +232,7 @@ class WSProtocol(WebSocketServerProtocol):
         msg = {
             'type': 'JOB_LIST',
             'status': status,
-            'jobs': [job.to_dict() for job in jobs]
+            'jobs': [self.process_job(job) for job in jobs]
         }
         self.send_json(msg)
 
