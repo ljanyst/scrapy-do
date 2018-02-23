@@ -17,3 +17,10 @@ export function makeId(length) {
 
   return text;
 }
+
+//------------------------------------------------------------------------------
+// Capitalize first letter
+//------------------------------------------------------------------------------
+export function capitalizeFirst(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
