@@ -44,6 +44,12 @@ th {
     overflow: auto;
 }
 
+.list-item-secondary {
+    overflow: auto;
+    margin-top: 0.5em;
+    color: #666;
+}
+
 .spider-list {
 }
 
