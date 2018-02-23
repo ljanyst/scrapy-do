@@ -355,6 +355,23 @@ class Controller(Service):
         return self.schedule.get_job(job_id)
 
     #---------------------------------------------------------------------------
+    def get_job_logs(self, job_id):
+        """
+        Get paths to job log files.
+        :return: A tuple containing paths to out and error logs or `None` if
+                 one or both don't exist
+        """
+        path = os.path.join(self.log_dir, job_id)
+        logs = []
+        for log in ['out', 'err']:
+            log_path = '{}.{}'.format(path, log)
+            if os.path.exists(log_path):
+                logs.append(log_path)
+            else:
+                logs.append(None)
+        return tuple(logs)
+
+    #---------------------------------------------------------------------------
     def run_scheduler(self):
         """
         Run the `schedule.Scheduler` jobs.
