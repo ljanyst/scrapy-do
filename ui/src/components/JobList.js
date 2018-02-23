@@ -10,6 +10,7 @@ import { connect } from 'react-redux';
 import { Panel, Button, Glyphicon, ListGroup } from 'react-bootstrap';
 
 import { BACKEND_OPENED } from '../actions/backend';
+import { capitalizeFirst } from '../utils/helpers';
 
 import JobListItem from './JobListItem';
 
@@ -23,7 +24,6 @@ class JobList extends Component {
   render() {
     const jobIds = this.props.jobs;
     const status = this.props.match.params.status;
-    const jobStatus = status.charAt(0).toUpperCase() + status.slice(1);
 
     //--------------------------------------------------------------------------
     // Job list
@@ -40,7 +40,7 @@ class JobList extends Component {
             <JobListItem
               key={jobId}
               jobId={jobId}
-              jobList={jobStatus.toUpperCase()}
+              jobList={status.toUpperCase()}
             />
           ))}
         </ListGroup>
@@ -69,7 +69,7 @@ class JobList extends Component {
     //--------------------------------------------------------------------------
     return(
       <div className='col-md-8 col-md-offset-2'>
-        <h2>{jobStatus } Jobs</h2>
+        <h2>{capitalizeFirst(status)} Jobs</h2>
         {scheduleButton}
         {list}
       </div>
