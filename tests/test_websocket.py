@@ -40,6 +40,7 @@ class WebSocketTests(unittest.TestCase):
         controller.get_active_jobs.return_value = active_jobs
         completed_jobs = [Job(status=Status.CANCELED, actor=Actor.USER)]
         controller.get_completed_jobs.return_value = completed_jobs
+        controller.get_job_logs.return_value = (None, None)
         factory = WSFactory(controller=controller)
         factory.protocol = WSProtocol
         self.protocol = factory.buildProtocol(None)
@@ -128,3 +129,17 @@ class WebSocketTests(unittest.TestCase):
             send_message.side_effect = make_deferred_func(d)
             protocol.onMessage(data, False)
             yield d
+
+    #---------------------------------------------------------------------------
+    def test_job_handling(self):
+        protocol = self.protocol
+        controller = self.controller
+
+        #-----------------------------------------------------------------------
+        # Test building of job dictionaries
+        #-----------------------------------------------------------------------
+        controller.get_job_logs.return_value = ('/foo/bar', '/foo/bar')
+        job = Job(status=Status.CANCELED, actor=Actor.USER)
+        job_dict = protocol.process_job(job)
+        self.assertTrue(job_dict['outLog'])
+        self.assertTrue(job_dict['errLog'])
