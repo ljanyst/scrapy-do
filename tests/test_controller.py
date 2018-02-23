@@ -371,6 +371,14 @@ class ControllerTests(unittest.TestCase):
             self.assertTrue(os.path.exists(log_file))
 
         #-----------------------------------------------------------------------
+        # Test the log getter
+        #-----------------------------------------------------------------------
+        job = successful_jobs[0]
+        log = controller.get_job_logs(job.identifier)
+        self.assertEqual(log[0], None)
+        self.assertNotEqual(log[1], None)
+
+        #-----------------------------------------------------------------------
         # Test failure to spawn a job
         #-----------------------------------------------------------------------
         job = Job(Status.PENDING, Actor.SCHEDULER, 'now', 'foo', 'bar')
