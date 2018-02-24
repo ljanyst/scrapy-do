@@ -131,6 +131,7 @@ class WebSocketTests(unittest.TestCase):
             yield d
 
     #---------------------------------------------------------------------------
+    @inlineCallbacks
     def test_job_handling(self):
         protocol = self.protocol
         controller = self.controller
@@ -144,9 +145,38 @@ class WebSocketTests(unittest.TestCase):
         self.assertTrue(job_dict['outLog'])
         self.assertTrue(job_dict['errLog'])
 
-        #-----------------------------------------------------------------------
-        # Test job events
-        #-----------------------------------------------------------------------
-        with patch.object(WSProtocol, "sendMessage"):
+        with patch.object(WSProtocol, "sendMessage") as send_message:
+            #-------------------------------------------------------------------
+            # Test job events
+            #-------------------------------------------------------------------
             protocol.on_controller_event(ControllerEvent.JOB_UPDATE, job)
             protocol.on_controller_event(ControllerEvent.JOB_REMOVE, 'foo')
+
+            #-------------------------------------------------------------------
+            # Test job cancellation
+            #-------------------------------------------------------------------
+            d = Deferred()
+            send_message.side_effect = make_deferred_func(d)
+            msg = {
+                'type': 'ACTION',
+                'action': 'JOB_CANCEL',
+                'id': 'foo'
+            }
+            data = json_encode(msg)
+            protocol.onMessage(data, False)
+            yield d
+
+            msg['jobId'] = 'foo'
+            data = json_encode(msg)
+            d = Deferred()
+            send_message.side_effect = make_deferred_func(d)
+            protocol.onMessage(data, False)
+            yield d
+
+            msg['jobId'] = 'foo'
+            data = json_encode(msg)
+            d = Deferred()
+            send_message.side_effect = make_deferred_func(d)
+            controller.cancel_job.side_effect = ValueError('foo')
+            protocol.onMessage(data, False)
+            yield d
