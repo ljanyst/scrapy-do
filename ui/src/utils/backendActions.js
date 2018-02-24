@@ -26,3 +26,13 @@ export function projectPush(archiveData) {
     archiveData
   });
 }
+
+//------------------------------------------------------------------------------
+// Cancel job
+//------------------------------------------------------------------------------
+export function jobCancel(jobId) {
+  return backend.sendMessage({
+    action: 'JOB_CANCEL',
+    jobId
+  });
+}
