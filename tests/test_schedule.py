@@ -66,7 +66,7 @@ class ScheduleTests(unittest.TestCase):
         job = self.schedule.get_job(scheduled_jobs[0].identifier)
         self.compare_jobs(job, scheduled_jobs[0])
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             self.schedule.get_job(identifier=scheduled_jobs[0].identifier + 'a')
 
         active_jobs = self.schedule.get_active_jobs()

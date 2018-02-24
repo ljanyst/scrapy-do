@@ -208,17 +208,17 @@ class ControllerTests(unittest.TestCase):
         for spider in project.spiders:
             self.assertIn(spider, spiders)
 
-        self.assertRaises(KeyError,
+        self.assertRaises(ValueError,
                           f=controller.get_spiders,
                           project_name='foo')
 
         #-----------------------------------------------------------------------
         # Job scheduling
         #-----------------------------------------------------------------------
-        self.assertRaises(KeyError,
+        self.assertRaises(ValueError,
                           f=controller.schedule_job,
                           project='foo', spider='bar', when='bar')
-        self.assertRaises(KeyError,
+        self.assertRaises(ValueError,
                           f=controller.schedule_job,
                           project='quotesbot', spider='bar', when='bar')
 
@@ -460,8 +460,8 @@ class ControllerTests(unittest.TestCase):
         try:
             yield controller.cancel_job(job_id4)
             self.fail('Cancelling a job missing from the dictionary should '
-                      'have risen a KeyError exception but did not')
-        except KeyError as e:
+                      'have risen a ValueError exception but did not')
+        except ValueError as e:
             pass
 
         controller.running_jobs[job_id4] = job_data4
@@ -473,8 +473,8 @@ class ControllerTests(unittest.TestCase):
         try:
             yield controller.cancel_job(job_id4)
             self.fail('Cancelling an incactive job should have risen '
-                      'a KeyError exception but did not')
-        except KeyError as e:
+                      'a ValueError exception but did not')
+        except ValueError as e:
             pass
 
         #-----------------------------------------------------------------------
