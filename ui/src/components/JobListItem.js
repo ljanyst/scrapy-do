@@ -81,7 +81,7 @@ class JobListItem extends Component {
             job.outLog
               ? (<a href={getLogURL(job.identifier, false)}>Out Log</a>)
               : ''}
-          {job.outLog && job.errLog ? ' ' : ''}
+          {job.outLog && job.errLog ? ' | ' : ''}
           {
             job.errLog
               ? (<a href={getLogURL(job.identifier, true)}>Error Log</a>)
@@ -107,7 +107,7 @@ class JobListItem extends Component {
         </div>
         <div className='list-item-secondary'>
           {secondaryPanel}
-          Scheduled to run {job.schedule} by {capitalizeFirst(job.actor)}.
+          Scheduled by {capitalizeFirst(job.actor)} to run {job.schedule}.
         </div>
       </ListGroupItem>
     );
