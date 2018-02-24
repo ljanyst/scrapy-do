@@ -288,10 +288,10 @@ class Controller(Service):
         Get names of all the spiders in the project.
 
         :param project_name: Name of the project
-        :raises KeyError:    If the project name is not known
+        :raises ValueError:    If the project name is not known
         """
         if project_name not in self.projects.keys():
-            raise KeyError('Unknown project ' + project_name)
+            raise ValueError('Unknown project ' + project_name)
         return self.projects[project_name].spiders
 
     #---------------------------------------------------------------------------
@@ -308,10 +308,10 @@ class Controller(Service):
         :return:        A string identifier of a job
         """
         if project not in self.projects.keys():
-            raise KeyError('Unknown project ' + project)
+            raise ValueError('Unknown project ' + project)
 
         if spider not in self.projects[project].spiders:
-            raise KeyError('Unknown spider {}/{}'.format(project, spider))
+            raise ValueError('Unknown spider {}/{}'.format(project, spider))
 
         job = Job(Status.PENDING, actor, 'now', project, spider)
         if when != 'now':
@@ -568,7 +568,7 @@ class Controller(Service):
         elif job.status == Status.RUNNING:
             while True:
                 if job_id not in self.running_jobs:
-                    raise KeyError('Job {} is not active'.format(job_id))
+                    raise ValueError('Job {} is not active'.format(job_id))
                 if self.running_jobs[job_id] is None:
                     yield twisted_sleep(0.1)  # wait until the job starts
                 else:
@@ -586,7 +586,7 @@ class Controller(Service):
         # Not active
         #-----------------------------------------------------------------------
         else:
-            raise KeyError('Job {} is not active'.format(job_id))
+            raise ValueError('Job {} is not active'.format(job_id))
 
     #---------------------------------------------------------------------------
     def purge_completed_jobs(self):
