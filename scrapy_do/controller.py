@@ -45,7 +45,9 @@ class Event(Enum):
     """
     DAEMON_STATUS_CHANGE = 1,
     PROJECT_PUSH = 2,
-    PROJECT_REMOVE = 3
+    PROJECT_REMOVE = 3,
+    JOB_UPDATE = 4,
+    JOB_REMOVE = 5
 
 
 #-------------------------------------------------------------------------------
@@ -134,7 +136,7 @@ class Controller(Service):
         for job in self.schedule.get_jobs(Status.RUNNING):
             self.log.info('Restarting interrupted: {}'.format(str(job)))
             job.status = Status.PENDING
-            self.schedule.commit_job(job)
+            self._update_job(job)
 
         #-----------------------------------------------------------------------
         # Set up the service
@@ -322,6 +324,7 @@ class Controller(Service):
 
         self.log.info('Scheduling: {}'.format(str(job)))
         self.schedule.add_job(job)
+        self.dispatch_event(Event.JOB_UPDATE, job)
         return job.identifier
 
     #---------------------------------------------------------------------------
@@ -429,7 +432,7 @@ class Controller(Service):
             #-------------------------------------------------------------------
             job = jobs.pop()
             job.status = Status.RUNNING
-            self.schedule.commit_job(job)
+            self._update_job(job)
             # Use a placeholder until the process is actually started, so that
             # we do not exceed the quota due to races.
             self.running_jobs[job.identifier] = None
@@ -442,7 +445,7 @@ class Controller(Service):
             def spawn_errback(error, job):
                 self.counter_failure += 1
                 job.status = Status.FAILED
-                self.schedule.commit_job(job)
+                self._update_job(job)
                 self.log.error('Unable to start job {}: {}'.format(
                     job.identifier, exc_repr(error.value)))
                 del self.running_jobs[job.identifier]
@@ -474,7 +477,7 @@ class Controller(Service):
                     msg = "Job {} exited with code {}".format(job.identifier,
                                                               exit_code)
                     self.log.info(msg)
-                    self.schedule.commit_job(job)
+                    self._update_job(job)
                     del self.running_jobs[job.identifier]
                     return exit_code
 
@@ -548,7 +551,7 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         if job.status == Status.SCHEDULED:
             job.status = Status.CANCELED
-            self.schedule.commit_job(job)
+            self._update_job(job)
             self.scheduler.cancel_job(self.scheduled_jobs[job_id])
             del self.scheduled_jobs[job_id]
 
@@ -557,7 +560,7 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         elif job.status == Status.PENDING:
             job.status = Status.CANCELED
-            self.schedule.commit_job(job)
+            self._update_job(job)
 
         #-----------------------------------------------------------------------
         # Running
@@ -577,7 +580,7 @@ class Controller(Service):
             self.counter_cancel += 1
             job.status = Status.CANCELED
             job.duration = (datetime.now() - rj.time_started).seconds
-            self.schedule.commit_job(job)
+            self._update_job(job)
 
         #-----------------------------------------------------------------------
         # Not active
@@ -596,6 +599,7 @@ class Controller(Service):
             self.log.info('Purging {} old jobs'.format(len(old_jobs)))
 
         for job in old_jobs:
+            self.dispatch_event(Event.JOB_REMOVE, job.identifier)
             self.schedule.remove_job(job.identifier)
             for log_type in ['.out', '.err']:
                 log_file = os.path.join(self.log_dir, job.identifier + log_type)
@@ -631,6 +635,11 @@ class Controller(Service):
 
         self.log.info('Project "{}" removed'.format(name))
         self.dispatch_event(Event.PROJECT_REMOVE, name)
+
+    #---------------------------------------------------------------------------
+    def _update_job(self, job):
+        self.dispatch_event(Event.JOB_UPDATE, job)
+        self.schedule.commit_job(job)
 
     #---------------------------------------------------------------------------
     def add_event_listener(self, listener):
