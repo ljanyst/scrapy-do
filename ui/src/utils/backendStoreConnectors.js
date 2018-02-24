@@ -13,7 +13,7 @@ import {
 import {
   projectListSet, projectPush, projectRemove
 } from '../actions/projects';
-import { jobListSet } from '../actions/jobs';
+import { jobListSet, jobUpdate, jobRemove } from '../actions/jobs';
 
 //------------------------------------------------------------------------------
 // Make backend events change the state of the stare
@@ -43,6 +43,12 @@ export const messageStoreEvent = (event, data) => {
     break;
   case 'JOB_LIST':
     store.dispatch(jobListSet(data.status, data.jobs));
+    break;
+  case 'JOB_UPDATE':
+    store.dispatch(jobUpdate(data.job));
+    break;
+  case 'JOB_REMOVE':
+    store.dispatch(jobRemove(data.jobId));
     break;
 
   default:
