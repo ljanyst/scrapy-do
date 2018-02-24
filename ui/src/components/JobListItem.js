@@ -57,9 +57,9 @@ class JobListItem extends Component {
     this.dialog.show({
       body: `Are you sure you want to cancel the job?`,
       actions: [
-        Dialog.Action('Cancel'),
+        Dialog.Action('No'),
         Dialog.Action(
-          'OK',
+          'Yes',
           () => {
             jobCancel(job.identifier+'a')
               .catch((error) => {
