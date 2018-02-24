@@ -52,6 +52,7 @@ class WSProtocol(WebSocketServerProtocol):
         self.actionHandlers = {}
         self.actionHandlers['PROJECT_REMOVE'] = self.project_remove
         self.actionHandlers['PROJECT_PUSH'] = self.project_push
+        self.actionHandlers['JOB_CANCEL'] = self.job_cancel
 
     #---------------------------------------------------------------------------
     def onOpen(self):
@@ -295,5 +296,18 @@ class WSProtocol(WebSocketServerProtocol):
                 'name': project.name
             }
             self.send_response(data['id'], msg)
+        except Exception as e:
+            self.send_error_response(data['id'], str(e))
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def job_cancel(self, data):
+        if 'jobId' not in data:
+            self.send_error_response(data['id'], 'Job ID not specified.')
+            return
+
+        try:
+            yield self.controller.cancel_job(data['jobId'])
+            self.send_response(data['id'])
         except Exception as e:
             self.send_error_response(data['id'], str(e))
