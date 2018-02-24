@@ -219,7 +219,7 @@ class Schedule:
         response = self.db.execute(query, (identifier, ))
         rec = response.fetchone()
         if rec is None:
-            raise KeyError('No such job: "{}"'.format(identifier))
+            raise ValueError('No such job: "{}"'.format(identifier))
         return _record_to_job(rec)
 
     #---------------------------------------------------------------------------
