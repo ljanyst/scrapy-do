@@ -8,9 +8,11 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { ListGroupItem, Button, Glyphicon } from 'react-bootstrap';
 import moment from 'moment-timezone';
+import Dialog from 'react-bootstrap-dialog';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
+import { jobCancel } from '../utils/backendActions';
 
 //------------------------------------------------------------------------------
 // Convert status to label class
@@ -48,6 +50,29 @@ class JobListItem extends Component {
   }
 
   //----------------------------------------------------------------------------
+  // Show cancel dialog
+  //----------------------------------------------------------------------------
+  showCancelDialog = () => {
+    const job = this.props;
+    this.dialog.show({
+      body: `Are you sure you want to cancel the job?`,
+      actions: [
+        Dialog.Action('Cancel'),
+        Dialog.Action(
+          'OK',
+          () => {
+            jobCancel(job.identifier+'a')
+              .catch((error) => {
+                setTimeout(() => this.dialog.showAlert(error.message), 250);
+              });
+          },
+          'btn-danger'
+        )
+      ]
+    });
+  };
+
+  //----------------------------------------------------------------------------
   // Render the component
   //----------------------------------------------------------------------------
   render() {
@@ -64,6 +89,7 @@ class JobListItem extends Component {
         <Button
           bsSize="xsmall"
           disabled={!this.props.connected}
+          onClick={this.showCancelDialog}
         >
           <Glyphicon glyph='remove-circle'/> Cancel
         </Button>
@@ -96,6 +122,7 @@ class JobListItem extends Component {
     //--------------------------------------------------------------------------
     return (
       <ListGroupItem>
+        <Dialog ref={(el) => { this.dialog = el; }} />
         <div className='list-item'>
           <div className='item-panel' title={dateTime}>
             {timestamp.fromNow()}
