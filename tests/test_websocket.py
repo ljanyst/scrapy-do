@@ -143,3 +143,10 @@ class WebSocketTests(unittest.TestCase):
         job_dict = protocol.process_job(job)
         self.assertTrue(job_dict['outLog'])
         self.assertTrue(job_dict['errLog'])
+
+        #-----------------------------------------------------------------------
+        # Test job events
+        #-----------------------------------------------------------------------
+        with patch.object(WSProtocol, "sendMessage"):
+            protocol.on_controller_event(ControllerEvent.JOB_UPDATE, job)
+            protocol.on_controller_event(ControllerEvent.JOB_REMOVE, 'foo')
