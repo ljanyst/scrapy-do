@@ -237,6 +237,22 @@ class WSProtocol(WebSocketServerProtocol):
         self.send_json(msg)
 
     #---------------------------------------------------------------------------
+    def send_job_update(self, job):
+        msg = {
+            'type': 'JOB_UPDATE',
+            'job': self.process_job(job)
+        }
+        self.send_json(msg)
+
+    #---------------------------------------------------------------------------
+    def send_job_remove(self, jobId):
+        msg = {
+            'type': 'JOB_REMOVE',
+            'jobId': jobId,
+        }
+        self.send_json(msg)
+
+    #---------------------------------------------------------------------------
     def on_controller_event(self, event_type, event_data):
         if event_type == ControllerEvent.DAEMON_STATUS_CHANGE:
             self.send_daemon_status()
@@ -246,6 +262,12 @@ class WSProtocol(WebSocketServerProtocol):
         elif event_type == ControllerEvent.PROJECT_REMOVE:
             self.send_project_remove(event_data)
             self.send_projects_status()
+        elif event_type == ControllerEvent.JOB_UPDATE:
+            self.send_job_update(event_data)
+            self.send_jobs_status()
+        elif event_type == ControllerEvent.JOB_REMOVE:
+            self.send_job_remove(event_data)
+            self.send_jobs_status()
 
     #---------------------------------------------------------------------------
     def project_remove(self, data):
