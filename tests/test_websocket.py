@@ -41,6 +41,7 @@ class WebSocketTests(unittest.TestCase):
         completed_jobs = [Job(status=Status.CANCELED, actor=Actor.USER)]
         controller.get_completed_jobs.return_value = completed_jobs
         controller.get_job_logs.return_value = (None, None)
+        controller.schedule_job.return_value = 'foo'
         factory = WSFactory(controller=controller)
         factory.protocol = WSProtocol
         self.protocol = factory.buildProtocol(None)
@@ -180,3 +181,24 @@ class WebSocketTests(unittest.TestCase):
             controller.cancel_job.side_effect = ValueError('foo')
             protocol.onMessage(data, False)
             yield d
+
+            #-------------------------------------------------------------------
+            # Test hob scheduling
+            #-------------------------------------------------------------------
+            send_message.side_effect = None
+            msg = {
+                'type': 'ACTION',
+                'action': 'JOB_SCHEDULE',
+                'id': 'foo'
+            }
+            data = json_encode(msg)
+            protocol.onMessage(data, False)
+
+            msg['project'] = 'foo'
+            msg['spider'] = 'bar'
+            msg['schedule'] = 'now'
+            data = json_encode(msg)
+            protocol.onMessage(data, False)
+
+            controller.schedule_job.side_effect = ValueError('foo')
+            protocol.onMessage(data, False)
