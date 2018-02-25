@@ -14,11 +14,19 @@ import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
 
 import JobListItem from './JobListItem';
+import ScheduleDialog from './ScheduleDialog';
 
 //------------------------------------------------------------------------------
 // Job list
 //------------------------------------------------------------------------------
 class JobList extends Component {
+  //----------------------------------------------------------------------------
+  // Show the schedule dialog
+  //----------------------------------------------------------------------------
+  showScheduleDialog = () => {
+    this.scheduleDialogCtl.show();
+  };
+
   //----------------------------------------------------------------------------
   // Render
   //----------------------------------------------------------------------------
@@ -56,7 +64,8 @@ class JobList extends Component {
         <Button
           bsSize="xsmall"
           disabled={!this.props.connected}
-          >
+          onClick={this.showScheduleDialog}
+        >
           <Glyphicon glyph='calendar'/> Schedule a job
         </Button>
       </div>
@@ -70,6 +79,9 @@ class JobList extends Component {
     //--------------------------------------------------------------------------
     return(
       <div className='col-md-8 col-md-offset-2'>
+        <ScheduleDialog
+          provideController={ctl => this.scheduleDialogCtl = ctl}
+        />
         <h2>{capitalizeFirst(status)} Jobs</h2>
         {scheduleButton}
         {list}
