@@ -36,3 +36,15 @@ export function jobCancel(jobId) {
     jobId
   });
 }
+
+//------------------------------------------------------------------------------
+// Schedule job
+//------------------------------------------------------------------------------
+export function jobSchedule(project, spider, schedule) {
+  return backend.sendMessage({
+    action: 'JOB_SCHEDULE',
+    project,
+    spider,
+    schedule
+  });
+}
