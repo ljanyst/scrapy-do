@@ -8,7 +8,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import {
-  FormGroup, ControlLabel, FormControl, Modal, Button
+  FormGroup, ControlLabel, FormControl, Modal, Button, HelpBlock
 } from 'react-bootstrap';
 
 //------------------------------------------------------------------------------
@@ -159,15 +159,22 @@ class ScheduleDialog extends Component {
     //--------------------------------------------------------------------------
     // Schedule input
     //--------------------------------------------------------------------------
+    const specDocLink = 'https://scrapy-do.readthedocs.io/en/latest/basic-concepts.html#scheduling-specs';
     const scheduleInput = (
-      <FormGroup controlId='scheduleInput'
-                 validationState={scheduleValid(this.state.schedule) ? 'success' : 'error'}
+      <FormGroup
+        controlId='scheduleInput'
+        validationState={
+          scheduleValid(this.state.schedule) ? 'success' : 'error'
+        }
       >
         <ControlLabel>Schedule</ControlLabel>
         <FormControl type='text' disabled={this.state.scheduleDisabled}
                      value={this.state.schedule}
                      onChange={this.onScheduleChange} />
         <FormControl.Feedback />
+        <HelpBlock>
+          See the <a href={specDocLink}>docs</a> on scheduling specs.
+        </HelpBlock>
       </FormGroup>
     );
 
