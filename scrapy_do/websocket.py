@@ -53,6 +53,7 @@ class WSProtocol(WebSocketServerProtocol):
         self.actionHandlers['PROJECT_REMOVE'] = self.project_remove
         self.actionHandlers['PROJECT_PUSH'] = self.project_push
         self.actionHandlers['JOB_CANCEL'] = self.job_cancel
+        self.actionHandlers['JOB_SCHEDULE'] = self.job_schedule
 
     #---------------------------------------------------------------------------
     def onOpen(self):
@@ -309,5 +310,24 @@ class WSProtocol(WebSocketServerProtocol):
         try:
             yield self.controller.cancel_job(data['jobId'])
             self.send_response(data['id'])
+        except Exception as e:
+            self.send_error_response(data['id'], str(e))
+
+    #---------------------------------------------------------------------------
+    def job_schedule(self, data):
+        for field in ['project', 'spider', 'schedule']:
+            if field not in data:
+                msg = '{} not specified.'.format(field.title())
+                self.send_error_response(data['id'], msg)
+                return
+
+        try:
+            jobId = self.controller.schedule_job(data['project'],
+                                                 data['spider'],
+                                                 data['schedule'])
+            msg = {
+                'jobId': jobId
+            }
+            self.send_response(data['id'], msg)
         except Exception as e:
             self.send_error_response(data['id'], str(e))
