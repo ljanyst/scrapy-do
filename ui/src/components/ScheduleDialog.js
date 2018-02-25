@@ -7,9 +7,12 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import Dialog from 'react-bootstrap-dialog';
 import {
   FormGroup, ControlLabel, FormControl, Modal, Button, HelpBlock
 } from 'react-bootstrap';
+
+import { jobSchedule } from '../utils/backendActions';
 
 //------------------------------------------------------------------------------
 // Validate the schedule
@@ -67,6 +70,17 @@ class ScheduleDialog extends Component {
   //----------------------------------------------------------------------------
   hide = () => {
     this.setState(defaultState);
+  }
+
+  //----------------------------------------------------------------------------
+  // Schedule the job
+  //----------------------------------------------------------------------------
+  schedule = () => {
+    jobSchedule(this.state.project, this.state.spider, this.state.schedule)
+      .catch(error => {
+        setTimeout(() => this.dialog.showAlert(error.message), 250);
+      });
+    this.hide();
   }
 
   //----------------------------------------------------------------------------
@@ -183,6 +197,7 @@ class ScheduleDialog extends Component {
     //--------------------------------------------------------------------------
     return (
       <div>
+        <Dialog ref={(el) => { this.dialog = el; }} />
         <Modal show={this.state.show} onHide={this.handleClose} bsSize='small'>
           <Modal.Body>
             {projectSelector}
@@ -197,7 +212,7 @@ class ScheduleDialog extends Component {
               Cancel
             </Button>
             <Button
-              onClick={this.hide}
+              onClick={this.schedule}
               bsStyle='primary'
               bsSize='small'
               disabled={this.state.submitDisabled}
