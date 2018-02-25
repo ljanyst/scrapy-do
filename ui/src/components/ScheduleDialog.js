@@ -28,6 +28,7 @@ function scheduleValid(schedule) {
 //------------------------------------------------------------------------------
 const defaultState = {
   show: false,
+  projectsDisabled: false,
   spidersDisabled: true,
   scheduleDisabled: true,
   submitDisabled: true,
@@ -47,7 +48,8 @@ class ScheduleDialog extends Component {
   //----------------------------------------------------------------------------
   componentDidMount() {
     this.props.provideController({
-      show: this.show
+      show: this.show,
+      showForSpider: this.showForSpider
     });
   }
 
@@ -63,6 +65,20 @@ class ScheduleDialog extends Component {
   //----------------------------------------------------------------------------
   show = () => {
     this.setState({show: true});
+  }
+
+  //----------------------------------------------------------------------------
+  // Show the dialog for a given spider
+  //----------------------------------------------------------------------------
+  showForSpider = (project, spider) => {
+    this.setState({
+      show: true,
+      project,
+      spider,
+      projectsDisabled: true,
+      scheduleDisabled: false,
+      submitDisabled: false
+    });
   }
 
   //----------------------------------------------------------------------------
@@ -138,11 +154,18 @@ class ScheduleDialog extends Component {
       <FormGroup controlId='projectSelect'>
         <ControlLabel>Project</ControlLabel>
         <FormControl componentClass='select' placeholder='__select'
+                     disabled={this.state.projectsDisabled}
                      onChange={this.onProjectChange}
         >
           <option value='__select'>Select Project</option>
           {this.props.__projects.map(project => (
-            <option key={project} value={project}>{project}</option>
+            <option
+              key={project}
+              value={project}
+              selected={this.state.project === project}
+            >
+              {project}
+            </option>
           ))}
         </FormControl>
       </FormGroup>
@@ -152,19 +175,26 @@ class ScheduleDialog extends Component {
     // Spider selector
     //--------------------------------------------------------------------------
     let spiders = [];
-    if(!this.state.spidersDisabled && this.state.project in this.props)
+    if(this.state.project && this.state.project in this.props)
       spiders = this.props[this.state.project].spiders;
 
     const spiderSelector = (
       <FormGroup controlId='spiderSelect'>
         <ControlLabel>Spider</ControlLabel>
-        <FormControl componentClass='select' placeholder='__select'
+        <FormControl componentClass='select'
+                     placeholder='__select'
                      disabled={this.state.spidersDisabled}
                      onChange={this.onSpiderChange}
         >
           <option value='__select'>Select Spider</option>
           {spiders.map(spider => (
-            <option key={spider} value={spider}>{spider}</option>
+            <option
+              key={spider}
+              value={spider}
+              selected={this.state.spider === spider}
+            >
+              {spider}
+            </option>
           ))}
         </FormControl>
       </FormGroup>
