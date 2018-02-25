@@ -14,6 +14,8 @@ import Dialog from 'react-bootstrap-dialog';
 import { BACKEND_OPENED } from '../actions/backend';
 import { projectRemove } from '../utils/backendActions';
 
+import ScheduleDialog from './ScheduleDialog';
+
 //------------------------------------------------------------------------------
 // Project List Item
 //------------------------------------------------------------------------------
@@ -49,6 +51,13 @@ class ProjectListItem extends Component {
   };
 
   //----------------------------------------------------------------------------
+  // Show schedule dialog
+  //----------------------------------------------------------------------------
+  showScheduleDialog = (project, spider) => {
+    this.scheduleDialogCtl.showForSpider(project, spider);
+  };
+
+  //----------------------------------------------------------------------------
   // Render
   //----------------------------------------------------------------------------
   render() {
@@ -56,6 +65,10 @@ class ProjectListItem extends Component {
     return(
       <Panel>
         <Dialog ref={(el) => { this.dialog = el; }} />
+        <ScheduleDialog
+          provideController={ctl => this.scheduleDialogCtl = ctl}
+        />
+
         <Panel.Heading >
           <div className='list-item'>
             <div className='item-panel'>
@@ -77,6 +90,7 @@ class ProjectListItem extends Component {
                 bsSize="xsmall"
                 disabled={!this.props.connected}
                 key={spider}
+                onClick={() => this.showScheduleDialog(project.name, spider)}
               >
                 <Glyphicon glyph='flash'/> {spider}
               </Button>
