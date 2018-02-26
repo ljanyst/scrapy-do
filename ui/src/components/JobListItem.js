@@ -63,7 +63,7 @@ class JobListItem extends Component {
         Dialog.Action(
           'Yes',
           () => {
-            jobCancel(job.identifier+'a')
+            jobCancel(job.identifier)
               .catch((error) => {
                 setTimeout(() => this.dialog.showAlert(error.message), 250);
               });
