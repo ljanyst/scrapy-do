@@ -13,15 +13,7 @@ import {
 } from 'react-bootstrap';
 
 import { jobSchedule } from '../utils/backendActions';
-
-//------------------------------------------------------------------------------
-// Validate the schedule
-//------------------------------------------------------------------------------
-function scheduleValid(schedule) {
-  if(schedule.length)
-    return true;
-  return false;
-};
+import { scheduleValid } from '../utils/helpers';
 
 //------------------------------------------------------------------------------
 // Default state
