@@ -24,8 +24,8 @@ const defaultState = {
   spidersDisabled: true,
   scheduleDisabled: true,
   submitDisabled: true,
-  project: null,
-  spider: null,
+  project: '__select',
+  spider: '__select',
   schedule: 'now'
 };
 
@@ -99,7 +99,8 @@ class ScheduleDialog extends Component {
       this.setState({
         spidersDisabled: true,
         scheduleDisabled: true,
-        submitDisabled: true
+        submitDisabled: true,
+        project: event.target.value
       });
     else
       this.setState({
@@ -115,7 +116,8 @@ class ScheduleDialog extends Component {
     if(event.target.value === '__select')
       this.setState({
         scheduleDisabled: true,
-        submitDisabled: true
+        submitDisabled: true,
+        spider: event.target.value
       });
     else
       this.setState({
@@ -148,14 +150,11 @@ class ScheduleDialog extends Component {
         <FormControl componentClass='select' placeholder='__select'
                      disabled={this.state.projectsDisabled}
                      onChange={this.onProjectChange}
+                     value={this.state.project}
         >
           <option value='__select'>Select Project</option>
           {this.props.__projects.map(project => (
-            <option
-              key={project}
-              value={project}
-              selected={this.state.project === project}
-            >
+            <option key={project} value={project}>
               {project}
             </option>
           ))}
@@ -167,7 +166,7 @@ class ScheduleDialog extends Component {
     // Spider selector
     //--------------------------------------------------------------------------
     let spiders = [];
-    if(this.state.project && this.state.project in this.props)
+    if(this.state.project !== '__select' && this.state.project in this.props)
       spiders = this.props[this.state.project].spiders;
 
     const spiderSelector = (
@@ -177,14 +176,11 @@ class ScheduleDialog extends Component {
                      placeholder='__select'
                      disabled={this.state.spidersDisabled}
                      onChange={this.onSpiderChange}
+                     value={this.state.spider}
         >
           <option value='__select'>Select Spider</option>
           {spiders.map(spider => (
-            <option
-              key={spider}
-              value={spider}
-              selected={this.state.spider === spider}
-            >
+            <option key={spider} value={spider}>
               {spider}
             </option>
           ))}
