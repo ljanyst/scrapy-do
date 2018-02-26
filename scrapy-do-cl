@@ -70,6 +70,9 @@ def arg_setup(parser):
     if params['print-format'] is None:
         params['print-format'] = 'psql'
 
+    if params['url'] is None:
+        params['url'] = 'http://localhost:7654'
+
     #---------------------------------------------------------------------------
     # Set up the arguments
     #---------------------------------------------------------------------------
