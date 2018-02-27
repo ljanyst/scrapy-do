@@ -14,18 +14,8 @@ Quick Start
 
        $ scrapy-do -n scrapy-do
 
-* Open another terminal window and store the server's URL in the client's
-  configuration file so that you don't have to type it all the time:
-
-  .. code-block:: console
-
-       $ cat > ~/.scrapy-do.cfg << EOF
-       > [scrapy-do]
-       > url=http://localhost:7654
-       > EOF
-
-
-* Download the Scrapy's Quotesbot example and push the code to the server:
+* Open another terminal window, download the Scrapy's Quotesbot example, and
+  push the code to the server:
 
   .. code-block:: console
 
@@ -60,12 +50,9 @@ Quick Start
 
 * See what's going on:
 
-  .. code-block:: console
+  .. figure:: _static/jobs-active.png
+     :scale: 50 %
+     :alt: Active Jobs
 
-       $ scrapy-do-cl list-jobs
-       +--------------------------------------+-----------+--------------+-----------+-----------------------+---------+----------------------------+------------+
-       | identifier                           | project   | spider       | status    | schedule              | actor   | timestamp                  | duration   |
-       |--------------------------------------+-----------+--------------+-----------+-----------------------+---------+----------------------------+------------|
-       | b3a61347-92ef-4095-bb68-0702270a52b8 | quotesbot | toscrape-css | RUNNING   | now                   | USER    | 2018-01-27 08:32:19.781720 |            |
-       | 0a3db618-d8e1-48dc-a557-4e8d705d599c | quotesbot | toscrape-css | SCHEDULED | every 5 to 15 minutes | USER    | 2018-01-27 08:29:24.749770 |            |
-       +--------------------------------------+-----------+--------------+-----------+-----------------------+---------+----------------------------+------------+
+     The web interface is available at http://localhost:7654 by default.
+
