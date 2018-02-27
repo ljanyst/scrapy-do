@@ -25,6 +25,7 @@ Contents
    installation
    server-configuration
    commandline-client
+   webgui
    rest-api
    source-docs
 
