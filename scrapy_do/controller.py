@@ -361,6 +361,7 @@ class Controller(Service):
     def get_job_logs(self, job_id):
         """
         Get paths to job log files.
+
         :return: A tuple containing paths to out and error logs or `None` if
                  one or both don't exist
         """
