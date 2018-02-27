@@ -28,6 +28,9 @@ from .utils import pprint_relativedelta
 
 #-------------------------------------------------------------------------------
 class WSFactory(WebSocketServerFactory):
+    """
+    Server factory producing configured WSProtocol objects.
+    """
 
     #---------------------------------------------------------------------------
     def __init__(self, *args, **kwargs):
@@ -43,6 +46,10 @@ class WSFactory(WebSocketServerFactory):
 
 #-------------------------------------------------------------------------------
 class WSProtocol(WebSocketServerProtocol):
+    """
+    Web Socket protocol handling the interaction with the Scrapy Do web front
+    end.
+    """
 
     wslog = Logger()
 
@@ -57,6 +64,11 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def onOpen(self):
+        """
+        A connection has ben opened, so send the initial daemon state to the
+        client.
+        """
+
         self.send_daemon_status()
         self.send_projects_status()
         self.send_jobs_status()
@@ -67,6 +79,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def onMessage(self, payload, isBinary):
+        """
+        Handle client action such as pushing a new project or scheduling a job.
+        """
+
         #-----------------------------------------------------------------------
         # Check the message validity
         #-----------------------------------------------------------------------
@@ -107,16 +123,31 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def onClose(self, wasClean, code, reason):
+        """
+        The connection has been closed, clean up the state.
+        """
+
         self.controller.remove_event_listener(self.on_controller_event)
 
     #---------------------------------------------------------------------------
     def send_json(self, msg):
+        """
+        Convert a message dictionary to JSON and send it over to a client.
+        """
+
         data = json.dumps(msg) + '\n'
         data = data.encode('utf-8')
         self.sendMessage(data)
 
     #---------------------------------------------------------------------------
     def send_response(self, msg_id, data={}):
+        """
+        Send response to a client's action.
+
+        :param msg_id: the id of the client's message we're responding to
+        :param data:   the body of the response message
+        """
+
         data['id'] = msg_id
         data['type'] = 'ACTION_EXECUTED'
         if 'status' not in data:
@@ -125,6 +156,13 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_error_response(self, msg_id, error_msg):
+        """
+        Send an error response a client's action.
+
+        :param msg_id: the id of the client's message we're responding to
+        :param error_msg: the error message
+        """
+
         data = {
             'status': 'ERROR',
             'message': error_msg
@@ -133,6 +171,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_daemon_status(self):
+        """
+        Send the daemon status to the client.
+        """
+
         p = psutil.Process(os.getpid())
         uptime = relativedelta(datetime.now(), self.controller.start_time)
         uptime = pprint_relativedelta(uptime)
@@ -153,6 +195,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_projects_status(self):
+        """
+        Send the summary of projects to the client.
+        """
+
         controller = self.controller
         all_spiders = [
             spider
@@ -169,6 +215,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_jobs_status(self):
+        """
+        Send the summary of jobs to the client.
+        """
+
         msg = {
             'type': 'JOBS_STATUS',
             'jobsRun': self.controller.counter_run,
@@ -181,6 +231,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_project_list(self):
+        """
+        Send the full list of projects to the client.
+        """
+
         projects = self.controller.get_projects()
         projects = functools.reduce(lambda acc, x: acc + [{
             'name': x,
@@ -195,6 +249,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_project_push(self, prj):
+        """
+        Notify the client about a project being pushed.
+        """
+
         msg = {
             'type': 'PROJECT_PUSH',
             'name': prj.name,
@@ -204,6 +262,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_project_remove(self, name):
+        """
+        Notify the client about a project being removed.
+        """
+
         msg = {
             'type': 'PROJECT_REMOVE',
             'name': name
@@ -212,6 +274,11 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def process_job(self, job):
+        """
+        Process a dictionary describing a job and convert it to a form more
+        convenient for the client.
+        """
+
         job_dict = job.to_dict()
         logs = self.controller.get_job_logs(job.identifier)
         job_dict['timestamp'] = time.mktime(job.timestamp.timetuple())
@@ -225,6 +292,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_job_list(self, status):
+        """
+        Send a full ist of jobs to the client.
+        """
+
         jobs = []
         if status == 'ACTIVE':
             jobs = self.controller.get_active_jobs()
@@ -240,6 +311,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_job_update(self, job):
+        """
+        Notify the client about the job properties being updated.
+        """
+
         msg = {
             'type': 'JOB_UPDATE',
             'job': self.process_job(job)
@@ -248,6 +323,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def send_job_remove(self, jobId):
+        """
+        Notify the client about a job being removed.
+        """
+
         msg = {
             'type': 'JOB_REMOVE',
             'jobId': jobId,
@@ -256,6 +335,11 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def on_controller_event(self, event_type, event_data):
+        """
+        Handle controller events and dispatch appropriate messages to the
+        client.
+        """
+
         if event_type == ControllerEvent.DAEMON_STATUS_CHANGE:
             self.send_daemon_status()
         elif event_type == ControllerEvent.PROJECT_PUSH:
@@ -273,6 +357,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def project_remove(self, data):
+        """
+        Execute a project removal request.
+        """
+
         if 'name' not in data:
             self.send_error_response(data['id'], 'Project name not specified.')
             return
@@ -286,6 +374,10 @@ class WSProtocol(WebSocketServerProtocol):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def project_push(self, data):
+        """
+        Execute a project push request.
+        """
+
         if 'archiveData' not in data:
             self.send_error_response(data['id'], 'Project name not specified.')
             return
@@ -303,6 +395,10 @@ class WSProtocol(WebSocketServerProtocol):
     #---------------------------------------------------------------------------
     @inlineCallbacks
     def job_cancel(self, data):
+        """
+        Execute a job cancellation request.
+        """
+
         if 'jobId' not in data:
             self.send_error_response(data['id'], 'Job ID not specified.')
             return
@@ -315,6 +411,10 @@ class WSProtocol(WebSocketServerProtocol):
 
     #---------------------------------------------------------------------------
     def job_schedule(self, data):
+        """
+        Execute a job scheduling request.
+        """
+
         for field in ['project', 'spider', 'schedule']:
             if field not in data:
                 msg = '{} not specified.'.format(field.title())
