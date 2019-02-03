@@ -67,7 +67,10 @@ class WebServicesTests(unittest.TestCase):
         self.web_app.controller.scheduled_jobs = []
         prj1 = Project('a', 'a.zip', ['a', 'b'])
         prj2 = Project('b', 'b.zip', ['c'])
-        self.web_app.controller.projects = [prj1, prj2]
+        self.web_app.controller.projects = {
+            'prj1': prj1,
+            'prj2': prj2
+        }
 
     #---------------------------------------------------------------------------
     def test_status(self):
