@@ -116,7 +116,14 @@ def _build_directive_map(job):
 
 
 #-------------------------------------------------------------------------------
-def _parse_args(directive, directives):
+def _parse_args(interval, directive, directives):
+    #---------------------------------------------------------------------------
+    # Check plurals
+    #---------------------------------------------------------------------------
+    singulars = ['second', 'minute', 'hour', 'day', 'week']
+    if interval != 1 and directive in singulars:
+        raise ValueError('Use ' + directive + 's instead of ' + directive)
+
     #---------------------------------------------------------------------------
     # Check the argument to "to"
     #---------------------------------------------------------------------------
@@ -188,7 +195,7 @@ def _parse_spec(job, spec):
         if directive not in directive_map:
             raise ValueError('Unknown directive: ' + directive)
 
-        args = _parse_args(directive, directives)
+        args = _parse_args(job.interval, directive, directives)
 
         try:
             directive_map[directive](job, *args)
