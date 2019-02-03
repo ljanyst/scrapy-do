@@ -461,7 +461,7 @@ class ControllerTests(unittest.TestCase):
             yield controller.cancel_job(job_id4)
             self.fail('Cancelling a job missing from the dictionary should '
                       'have risen a ValueError exception but did not')
-        except ValueError as e:
+        except ValueError:
             pass
 
         controller.running_jobs[job_id4] = job_data4
@@ -474,7 +474,7 @@ class ControllerTests(unittest.TestCase):
             yield controller.cancel_job(job_id4)
             self.fail('Cancelling an incactive job should have risen '
                       'a ValueError exception but did not')
-        except ValueError as e:
+        except ValueError:
             pass
 
         #-----------------------------------------------------------------------
