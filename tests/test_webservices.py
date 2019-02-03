@@ -400,7 +400,7 @@ class WebServicesTests(unittest.TestCase):
         controller = Mock()
         request = Mock()
         with patch('scrapy_do.webservice.get_data') as get_data:
-            get_data.return_value = b'{"foo": "bar"}'
+            get_data.return_value = b'{"foo": "bar", "foo1": "/bar1"}'
             web_app = WebApp(config, controller)
         request.uri = b'/foo'
         index = web_app.getChild(None, request)
@@ -408,4 +408,5 @@ class WebServicesTests(unittest.TestCase):
         request.uri = b'/favicon.png'
         favicon = web_app.getChild(None, request)
         self.assertNotEqual(favicon, web_app.index)
-        self.assertEqual(favicon.render_GET(request), b'{"foo": "bar"}')
+        self.assertEqual(favicon.render_GET(request),
+                         b'{"foo": "bar", "foo1": "/bar1"}')
