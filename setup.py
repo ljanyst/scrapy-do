@@ -97,13 +97,14 @@ class build_ui(build_py):
             #-------------------------------------------------------------------
             print('Copying JavaScript artefacts to', target_dir)
             for artefact in artefacts:
+                if artefact.startswith('/'):
+                    artefact = artefact[1:]
                 source_file = os.path.join(build_dir, artefact)
                 target_file = os.path.join(target_dir, artefact)
                 target_prefix = os.path.dirname(target_file)
                 if not os.path.exists(target_prefix):
                     os.makedirs(target_prefix)
                 copyfile(source_file, target_file)
-
         build_py.run(self)
 
 #-------------------------------------------------------------------------------
