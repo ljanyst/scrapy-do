@@ -82,6 +82,8 @@ class WebApp(resource.Resource):
 
             assets = json.loads(assets)
             for _, asset in assets.items():
+                if asset.startswith('/'):
+                    asset = asset[1:]
                 self.register_child('/' + asset, UIResource('ui/' + asset))
 
     #---------------------------------------------------------------------------
