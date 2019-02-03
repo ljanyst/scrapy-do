@@ -23,6 +23,7 @@ from twisted.internet import reactor, task
 from distutils.spawn import find_executable
 from datetime import datetime
 from schedule import Job as SchJob
+from schedule import IntervalError
 
 
 #-------------------------------------------------------------------------------
@@ -192,7 +193,7 @@ def _parse_spec(job, spec):
 
         try:
             directive_map[directive](job, *args)
-        except AssertionError as e:
+        except IntervalError as e:
             raise ValueError(str(e))
 
     return job
