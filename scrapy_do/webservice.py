@@ -171,7 +171,9 @@ class Status(JsonResource):
         controller = self.parent.controller
         uptime = relativedelta(datetime.now(), controller.start_time)
         all_spiders = \
-            [spider for prj in controller.projects for spider in prj.spiders]
+            [spider
+                 for _, prj in controller.projects.items()
+                 for spider in prj.spiders]
         resp = {
             'memory-usage': float(p.memory_info().rss) / 1024. / 1024.,
             'cpu-usage': p.cpu_percent(),
