@@ -178,7 +178,7 @@ class Controller(Service):
 
         :param data: Binary blob with a zipped project code
         :return:     A deferred that gets called back with a `Project` object,
-                     or a `ValueError` failure.
+                     or a `ValueError` or an `EnvironmentError` failure.
         """
         self.log.info('Pushing new project')
 
@@ -195,6 +195,9 @@ class Controller(Service):
         temp_dir = tempfile.mkdtemp()
 
         unzip = find_executable('unzip')
+        if unzip is None:
+            raise EnvironmentError('Please install unzip')
+
         ret_code = yield getProcessValue(unzip, args=(tmp[1],), path=temp_dir)
         if ret_code != 0:
             shutil.rmtree(temp_dir)
@@ -228,6 +231,9 @@ class Controller(Service):
             raise ValueError('Project {} not found in the archive'.format(name))
 
         scrapy = find_executable('scrapy')
+        if scrapy is None:
+            raise EnvironmentError('Please install scrapy')
+
         ret = yield getProcessOutputAndValue(scrapy, ('list',),
                                              path=temp_proj_dir)
         out, err, ret_code = ret
@@ -392,6 +398,9 @@ class Controller(Service):
         archive = os.path.join(self.project_store, project + '.zip')
 
         unzip = find_executable('unzip')
+        if unzip is None:
+            raise EnvironmentError('Please install unzip')
+
         ret_code = yield getProcessValue(unzip, args=(archive,), path=temp_dir)
         if ret_code != 0:
             shutil.rmtree(temp_dir)
