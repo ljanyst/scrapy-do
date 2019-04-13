@@ -80,3 +80,22 @@ Quick Start
      :alt: Active Jobs
 
      The web interface is available at http://localhost:7654 by default.
+
+--------------------
+Building from source
+--------------------
+
+Both of the steps below require `nodejs` to be installed.
+
+* Check if things work fine:
+
+  .. code-block:: console
+
+       $ pip install -rrequirements-dev.txt
+       $ tox
+
+* Build the wheel:
+
+  .. code-block:: console
+
+       $ python setup.py bdist_wheel

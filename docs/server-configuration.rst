@@ -52,8 +52,9 @@ parameters.
 
 * **auth-db**: Path to your authentication database file. The file contains
   username-password pairs, each in a separate line. The user and password parts
-  are separated by a colon (``:``). I.e., ``myusername:mypassword``. Defaults to
-  ``auth.db``.
+  are separated by a colon (``:``). I.e., ``myusername:mypassword``. Please note
+  that the digest authentication requires the server to know the actual password
+  and not the hash. Defaults to ``auth.db``.
 
 ---------------------
 Example configuration
