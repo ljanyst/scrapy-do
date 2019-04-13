@@ -575,7 +575,7 @@ class Controller(Service):
                 else:
                     break
             rj = self.running_jobs[job_id]
-            rj.process.signalProcess('TERM')
+            rj.process.signalProcess('KILL')
             yield rj.finished_d
             self.counter_failure -= 1
             self.counter_cancel += 1
