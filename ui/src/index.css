@@ -40,6 +40,11 @@ th {
     float: right;
 }
 
+.item-log {
+    display: inline-block;
+    margin-right: 1em;
+}
+
 .list-item {
     overflow: auto;
 }

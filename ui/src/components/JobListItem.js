@@ -88,6 +88,11 @@ class JobListItem extends Component {
     //--------------------------------------------------------------------------
     let secondaryPanel = (
       <div className='item-panel' title={dateTime}>
+        <div className='item-log'>
+          <a href={getLogURL(job.identifier, false)}>Out Log</a>
+          &nbsp;|&nbsp;
+          <a href={getLogURL(job.identifier, true)}>Error Log</a>
+        </div>
         <Button
           bsSize="xsmall"
           disabled={!this.props.connected}
