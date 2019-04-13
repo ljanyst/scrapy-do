@@ -189,7 +189,7 @@ class Schedule:
         :data:`FAILED <Status.FAILED>`, or :data:`CANCELED <Status.CANCELED>`.
         """
         query = "SELECT * FROM {table} WHERE " \
-                "status=4 OR status=5 OR status=5 "\
+                "status=4 OR status=5 OR status=6 "\
                 "ORDER BY timestamp DESC"
         query = query.format(table=self.table)
         response = self.db.execute(query)

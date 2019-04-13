@@ -399,7 +399,7 @@ class ControllerTests(unittest.TestCase):
         # Check the overall number of completed and active jobs
         #-----------------------------------------------------------------------
         self.assertEqual(len(controller.get_active_jobs()), 4)
-        self.assertEqual(len(controller.get_completed_jobs()), 4)
+        self.assertEqual(len(controller.get_completed_jobs()), 6)
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
