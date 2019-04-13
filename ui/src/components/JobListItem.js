@@ -84,15 +84,22 @@ class JobListItem extends Component {
           .format('YYYY-MM-DD HH:mm:ss');
 
     //--------------------------------------------------------------------------
-    // Cancellation button
+    // Logs and cancellation button
     //--------------------------------------------------------------------------
-    let secondaryPanel = (
-      <div className='item-panel' title={dateTime}>
+    let runningLogs = '';
+    if(job.status === "RUNNING") {
+      runningLogs = (
         <div className='item-log'>
           <a href={getLogURL(job.identifier, false)}>Out Log</a>
           &nbsp;|&nbsp;
           <a href={getLogURL(job.identifier, true)}>Error Log</a>
         </div>
+      );
+    }
+
+    let secondaryPanel = (
+      <div className='item-panel' title={dateTime}>
+        {runningLogs}
         <Button
           bsSize="xsmall"
           disabled={!this.props.connected}
