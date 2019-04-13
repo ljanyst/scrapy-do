@@ -101,7 +101,7 @@ class WebApp(resource.Resource):
     def render_GET(self, request):
         data = b'The UI files have not been built.'
         request.setHeader('Content-Type', 'text/plain')
-        request.setHeader('Content-Length', len(data))
+        request.setHeader('Content-Length', str(len(data)))
         return data
 
 
@@ -121,7 +121,7 @@ class UIResource(resource.Resource):
     #---------------------------------------------------------------------------
     def render_GET(self, request):
         request.setHeader('Content-Type', self.mimetype)
-        request.setHeader('Content-Length', len(self.data))
+        request.setHeader('Content-Length', str(len(self.data)))
         return self.data
 
 
@@ -140,7 +140,7 @@ class JsonResource(resource.Resource):
         json_data = json.dumps(data) + '\n'
         json_data = json_data.encode('utf-8')
         request.setHeader('Content-Type', 'application/json')
-        request.setHeader('Content-Length', len(json_data))
+        request.setHeader('Content-Length', str(len(json_data)))
         request.setHeader('Access-Control-Allow-Origin', '*')
         return json_data
 
