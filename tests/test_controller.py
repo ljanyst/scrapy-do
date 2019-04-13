@@ -139,6 +139,7 @@ class ControllerTests(unittest.TestCase):
         # Test the error cases
         #-----------------------------------------------------------------------
         unzip = find_executable('unzip')
+        scrapy = find_executable('scrapy')
         for params in error_params:
             temp_test_dir = tempfile.mkdtemp()
             temp_test_file = tempfile.mkstemp()
@@ -187,6 +188,23 @@ class ControllerTests(unittest.TestCase):
             self.assertTrue(str(e).startswith('Spider toscrape-css'))
 
         yield controller.push_project(self.project_archive_data)
+
+        #-----------------------------------------------------------------------
+        # Test missing executables
+        #-----------------------------------------------------------------------
+        side_effects = [
+            ([None, scrapy], 'Please install unzip'),
+            ([unzip, None], 'Please install scrapy')
+        ]
+        for se, msg in side_effects:
+            with patch('scrapy_do.controller.find_executable') as fe_mock:
+                fe_mock.side_effect = se
+                try:
+                    yield controller.push_project(self.project_archive_data)
+                    self.fail('Pusing projects without required executables'
+                              ' should have risen an EnvironmentError')
+                except EnvironmentError as e:
+                    self.assertTrue(str(e).startswith(msg))
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
@@ -317,6 +335,18 @@ class ControllerTests(unittest.TestCase):
         self.assertFalse(os.path.exists(temp_dir))
         log_file = os.path.join(controller.log_dir, 'foo.err')
         self.assertTrue(os.path.exists(log_file))
+
+        #-----------------------------------------------------------------------
+        # Unzip not found
+        #-----------------------------------------------------------------------
+        with patch('scrapy_do.controller.find_executable') as fe_mock:
+            fe_mock.side_effect = [None]
+            try:
+                yield controller._run_crawler('foo', 'bar', 'foo')
+                self.fail('Unzipping a without unzip should have risen '
+                          'an EnvironmentError')
+            except EnvironmentError as e:
+                self.assertTrue(str(e).startswith('Please install unzip'))
 
         #-----------------------------------------------------------------------
         # Test the unzipping failuer
