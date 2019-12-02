@@ -259,12 +259,13 @@ class ScheduleJob(JsonResource):
 
     #---------------------------------------------------------------------------
     def render_POST(self, request):
-        arg_require_all(request.args, [b'project', b'spider', b'when'])
+        arg_require_all(request.args, [b'project', b'spider', b'when', b'payload'])
         project = request.args[b'project'][0].decode('utf-8')
         spider = request.args[b'spider'][0].decode('utf-8')
         when = request.args[b'when'][0].decode('utf-8')
+        payload = request.args[b'payload'][0].decode('utf-8')
 
-        job_id = self.parent.controller.schedule_job(project, spider, when)
+        job_id = self.parent.controller.schedule_job(project, spider, when, payload=payload)
         return {'identifier': job_id}
 
 

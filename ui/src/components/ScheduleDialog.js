@@ -26,7 +26,8 @@ const defaultState = {
   submitDisabled: true,
   project: '__select',
   spider: '__select',
-  schedule: 'now'
+  schedule: 'now',
+  payload: '{}'
 };
 
 //------------------------------------------------------------------------------
@@ -84,7 +85,7 @@ class ScheduleDialog extends Component {
   // Schedule the job
   //----------------------------------------------------------------------------
   schedule = () => {
-    jobSchedule(this.state.project, this.state.spider, this.state.schedule)
+    jobSchedule(this.state.project, this.state.spider, this.state.schedule, this.state.payload)
       .catch(error => {
         setTimeout(() => this.dialog.showAlert(error.message), 250);
       });
@@ -134,6 +135,16 @@ class ScheduleDialog extends Component {
     this.setState({
       schedule: event.target.value,
       submitDisabled: !scheduleValid(event.target.value)
+    });
+  };
+
+  //----------------------------------------------------------------------------
+  // On payload change
+  //----------------------------------------------------------------------------
+  onPayloadChange = (event) => {
+    this.setState({
+      payload: event.target.value,
+      submitDisabled: !1
     });
   };
 
@@ -211,6 +222,20 @@ class ScheduleDialog extends Component {
     );
 
     //--------------------------------------------------------------------------
+    // Payload input
+    //--------------------------------------------------------------------------
+    const payloadInput = (
+      <FormGroup
+        controlId='payloadInput'
+      >
+        <ControlLabel>Payload</ControlLabel>
+        <FormControl type='text' disabled={this.state.scheduleDisabled}
+                     value={this.state.payload}
+                     onChange={this.onPayloadChange} />
+      </FormGroup>
+    );
+
+    //--------------------------------------------------------------------------
     // The whole thing
     //--------------------------------------------------------------------------
     return (
@@ -221,6 +246,7 @@ class ScheduleDialog extends Component {
             {projectSelector}
             {spiderSelector}
             {scheduleInput}
+            {payloadInput}
           </Modal.Body>
           <Modal.Footer>
             <Button

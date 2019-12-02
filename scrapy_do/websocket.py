@@ -415,7 +415,7 @@ class WSProtocol(WebSocketServerProtocol):
         Execute a job scheduling request.
         """
 
-        for field in ['project', 'spider', 'schedule']:
+        for field in ['project', 'spider', 'schedule', 'payload']:
             if field not in data:
                 msg = '{} not specified.'.format(field.title())
                 self.send_error_response(data['id'], msg)
@@ -424,7 +424,8 @@ class WSProtocol(WebSocketServerProtocol):
         try:
             jobId = self.controller.schedule_job(data['project'],
                                                  data['spider'],
-                                                 data['schedule'])
+                                                 data['schedule'],
+                                                 payload=data['payload'])
             msg = {
                 'jobId': jobId
             }

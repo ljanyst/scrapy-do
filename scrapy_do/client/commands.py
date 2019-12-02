@@ -212,6 +212,8 @@ def schedule_job_arg_setup(subparsers):
                         help='spider name')
     parser.add_argument('--when', type=str, default='now',
                         help='scheduling spec')
+    parser.add_argument('--payload', type=str, default='{}',
+                        help='the args for spiders')
 
 
 def schedule_job_arg_process(args):
@@ -225,7 +227,8 @@ def schedule_job_arg_process(args):
     return {
         'project': args.project,
         'spider': args.spider,
-        'when': args.when
+        'when': args.when,
+        'payload': args.payload
     }
 
 

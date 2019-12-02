@@ -17,6 +17,7 @@ import pickle
 import shutil
 import time
 import os
+import json
 
 from twisted.application.service import Service
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -123,7 +124,8 @@ class Controller(Service):
             self.log.info('Re-scheduling: {}'.format(str(job)))
             sch_job = schedule_job(self.scheduler, job.schedule)
             sch_job.do(lambda job: self.schedule_job(job.project, job.spider,
-                                                     'now', Actor.SCHEDULER),
+                                                     'now', Actor.SCHEDULER,
+                                                     job.payload),
                        job)
             self.scheduled_jobs[job.identifier] = sch_job
 
@@ -301,7 +303,7 @@ class Controller(Service):
         return self.projects[project_name].spiders
 
     #---------------------------------------------------------------------------
-    def schedule_job(self, project, spider, when, actor=Actor.USER):
+    def schedule_job(self, project, spider, when, actor=Actor.USER, payload='{}'):
         """
         Schedule a crawler job.
 
@@ -311,6 +313,7 @@ class Controller(Service):
                         <scrapy_do.utils.schedule_job>`
         :param actor:   :data:`Actor <scrapy_do.schedule.Actor>` triggering the
                         event
+        :param payload: argues to run the spider
         :return:        A string identifier of a job
         """
         if project not in self.projects.keys():
@@ -319,11 +322,11 @@ class Controller(Service):
         if spider not in self.projects[project].spiders:
             raise ValueError('Unknown spider {}/{}'.format(project, spider))
 
-        job = Job(Status.PENDING, actor, 'now', project, spider)
+        job = Job(Status.PENDING, actor, 'now', project, spider, payload=payload)
         if when != 'now':
             sch_job = schedule_job(self.scheduler, when)
             sch_job.do(lambda: self.schedule_job(project, spider, 'now',
-                                                 Actor.SCHEDULER))
+                                                 Actor.SCHEDULER, payload=payload))
             self.scheduled_jobs[job.identifier] = sch_job
             job.status = Status.SCHEDULED
             job.schedule = when
@@ -390,7 +393,12 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
-    def _run_crawler(self, project, spider, job_id):
+    def _run_crawler(self, project, spider, payload, job_id):
+        args = ['crawl', spider]
+        argsdict = json.loads(payload)
+        for k, v in dict(argsdict).items():
+            args.append('-a')
+            args.append(k + '=' + json.dumps(v))
         #-----------------------------------------------------------------------
         # Unzip to a temporary directory
         #-----------------------------------------------------------------------
@@ -413,7 +421,7 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         temp_proj_dir = os.path.join(temp_dir, project)
         env = {'SPIDER_DATA_DIR': self.spider_data_dir}
-        process, finished = run_process('scrapy', ['crawl', spider], job_id,
+        process, finished = run_process('scrapy', args, job_id,
                                         self.log_dir, env=env,
                                         path=temp_proj_dir)
 
@@ -447,7 +455,7 @@ class Controller(Service):
             # we do not exceed the quota due to races.
             self.running_jobs[job.identifier] = None
 
-            d = self._run_crawler(job.project, job.spider, job.identifier)
+            d = self._run_crawler(job.project, job.spider, job.payload, job.identifier)
 
             #-------------------------------------------------------------------
             # Error starting the job

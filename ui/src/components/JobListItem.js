@@ -150,6 +150,9 @@ class JobListItem extends Component {
           {secondaryPanel}
           Scheduled by {capitalizeFirst(job.actor)} to run {job.schedule}.
         </div>
+        <div className='list-item-secondary'>
+          Payload: {job.payload}
+        </div>
       </ListGroupItem>
     );
   }

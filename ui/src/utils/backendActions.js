@@ -40,11 +40,12 @@ export function jobCancel(jobId) {
 //------------------------------------------------------------------------------
 // Schedule job
 //------------------------------------------------------------------------------
-export function jobSchedule(project, spider, schedule) {
+export function jobSchedule(project, spider, schedule, payload) {
   return backend.sendMessage({
     action: 'JOB_SCHEDULE',
     project,
     spider,
-    schedule
+    schedule,
+    payload
   });
 }
