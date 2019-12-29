@@ -64,7 +64,7 @@ class Job:
         if title:
             self._title = title
         else:
-            self._title = '{} ({})'.format(spider, project)
+            self._title = spider
         self._status = status
         self._actor = actor
         self._schedule = schedule
@@ -159,7 +159,7 @@ class Schedule:
         query += 'NOT NULL;'
         self.db.execute(query)
 
-        query = 'UPDATE schedule SET title=spider || " (" || project || ")";'
+        query = 'UPDATE schedule SET title=spider;'
         self.db.execute(query)
         self.db.commit()
 
