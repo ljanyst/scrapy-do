@@ -73,8 +73,7 @@ class ScheduleTests(unittest.TestCase):
         schedule = Schedule(db_file_test)
         jobs = schedule.get_active_jobs()
         for job in jobs:
-            title = '{} ({})'.format(job.spider, job.project)
-            self.assertEqual(job.title, title)
+            self.assertEqual(job.title, job.spider)
 
         lst = glob.glob(db_file_test + '.orig*')
         self.assertEqual(len(lst), 1)
