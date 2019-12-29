@@ -11,4 +11,3 @@ before_install:
 install: pip install tox-travis coveralls
 script:
     - tox
-    - if [ $TRAVIS_TEST_RESULT -eq 0 ]; then coveralls; fi
