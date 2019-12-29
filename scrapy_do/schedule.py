@@ -11,6 +11,7 @@ Functionality related to the database of jobs.
 
 import dateutil.parser
 import sqlite3
+import shutil
 import uuid
 
 from scrapy_do.utils import TimeStamper
@@ -46,17 +47,24 @@ class Job:
     A bin for all the parameters of a job.
     """
 
+    title = TimeStamper('_title')
     status = TimeStamper('_status')
     actor = TimeStamper('_actor')
     schedule = TimeStamper('_schedule')
     project = TimeStamper('_project')
     spider = TimeStamper('_spider')
     duration = TimeStamper('_duration')
+    payload = TimeStamper('_payload')
 
     #---------------------------------------------------------------------------
     def __init__(self, status=None, actor=None, schedule=None,
-                 project=None, spider=None, timestamp=None, duration=None):
+                 project=None, spider=None, timestamp=None, duration=None,
+                 title=None, payload='{}'):
         self.identifier = str(uuid.uuid4())
+        if title:
+            self._title = title
+        else:
+            self._title = '{} ({})'.format(spider, project)
         self._status = status
         self._actor = actor
         self._schedule = schedule
@@ -64,12 +72,14 @@ class Job:
         self._spider = spider
         self.timestamp = timestamp or datetime.now()
         self._duration = duration
+        self._payload = payload
 
     #---------------------------------------------------------------------------
     def __str__(self):
-        s = 'Job[id="{}", actor="{}", schedule="{}", project="{}", spider="{}"]'
-        s = s.format(self.identifier, self.actor.name, self.schedule,
-                     self.project, self.spider)
+        s = 'Job[id="{}", title="{}", actor="{}", schedule="{}", project="{}", '
+        s += 'spider="{}"]'
+        s = s.format(self.identifier, self.title, self.actor.name,
+                     self.schedule, self.project, self.spider)
         return s
 
     #---------------------------------------------------------------------------
@@ -79,13 +89,15 @@ class Job:
         """
         d = {
             'identifier': self.identifier,
+            'title': self.title,
             'status': self.status.name,
             'actor': self.actor.name,
             'schedule': self.schedule,
             'project': self.project,
             'spider': self.spider,
             'timestamp': str(self.timestamp),
-            'duration': self.duration
+            'duration': self.duration,
+            'payload': self.payload
         }
         return d
 
@@ -94,7 +106,7 @@ class Job:
 def _record_to_job(x):
     job = Job(status=Status(x[1]), actor=Actor(x[2]), schedule=x[3],
               project=x[4], spider=x[5], timestamp=dateutil.parser.parse(x[6]),
-              duration=x[7])
+              duration=x[7], title=x[8], payload=x[9])
     job.identifier = x[0]
     return job
 
@@ -105,20 +117,72 @@ class Schedule:
     A persistent database of jobs.
 
     :param database: A file name where the database will be stored
-    :param table:    Name of the table containing the schedule
     """
 
+    CURRENT_VERSION = 2
+
     #---------------------------------------------------------------------------
-    def __init__(self, database=None, table='schedule'):
+    def __init__(self, database=None):
         #-----------------------------------------------------------------------
-        # Create the database and the main table
+        # Create the database
         #-----------------------------------------------------------------------
         self.database = database or ':memory:'
-        self.table = table
         self.db = sqlite3.connect(self.database,
                                   detect_types=sqlite3.PARSE_DECLTYPES)
 
-        query = "CREATE TABLE IF NOT EXISTS {table} (" \
+        #-----------------------------------------------------------------------
+        # Create the metadata table if it does not exist
+        #-----------------------------------------------------------------------
+        query = 'CREATE TABLE IF NOT EXISTS schedule_metadata (' \
+                'key VARCHAR(255) PRIMARY KEY ON CONFLICT IGNORE, ' \
+                'value VARCHAR(255) NOT NULL ' \
+                ')'
+        self.db.execute(query)
+        self.db.commit()
+
+        query = 'SELECT * FROM schedule_metadata WHERE key="version"'
+        response = self.db.execute(query)
+        response = dict(response)
+
+        if 'version' in response:
+            self._open_database(int(response['version']))
+        else:
+            self._create_database()
+
+    #---------------------------------------------------------------------------
+    def _upgrade_v1_to_v2(self):
+        query = 'ALTER TABLE schedule ADD title VARCHAR(512) '
+        query += 'DEFAULT "" NOT NULL;'
+        self.db.execute(query)
+
+        query = 'ALTER TABLE schedule ADD payload VARCHAR(4096) DEFAULT "{}" '
+        query += 'NOT NULL;'
+        self.db.execute(query)
+
+        query = 'UPDATE schedule SET title=spider || " (" || project || ")";'
+        self.db.execute(query)
+        self.db.commit()
+
+    #---------------------------------------------------------------------------
+    def _open_database(self, version):
+        bak_file = self.database + '.orig.'
+        bak_file += datetime.now().strftime('%Y%m%d-%H%M%S')
+        shutil.copyfile(self.database, bak_file)
+        upgraders = {}
+        upgraders[1] = self._upgrade_v1_to_v2
+        for v in range(version, self.CURRENT_VERSION):
+            upgraders[v]()
+
+    #---------------------------------------------------------------------------
+    def _create_database(self):
+        query = 'INSERT INTO schedule_metadata ' \
+                '(key, value) values ("version", ?)'
+        self.db.execute(query, (str(self.CURRENT_VERSION),))
+
+        #-----------------------------------------------------------------------
+        # Create the main table
+        #-----------------------------------------------------------------------
+        query = "CREATE TABLE IF NOT EXISTS schedule (" \
                 "identifier VARCHAR(36) PRIMARY KEY, " \
                 "status INTEGER NOT NULL, " \
                 "actor INTEGER NOT NULL, " \
@@ -126,22 +190,10 @@ class Schedule:
                 "project VARCHAR(255) NOT NULL, " \
                 "spider VARCHAR(255) NOT NULL, " \
                 "timestamp DATETIME NOT NULL, " \
-                "duration INTEGER" \
+                "duration INTEGER," \
+                "title VARCHAR(512) NOT NULL," \
+                "payload VARCHAR(4096) NOT NULL" \
                 ")"
-        query = query.format(table=self.table)
-        self.db.execute(query)
-
-        #-----------------------------------------------------------------------
-        # Create the metadata table
-        #-----------------------------------------------------------------------
-        query = 'CREATE TABLE IF NOT EXISTS schedule_metadata (' \
-                'key VARCHAR(255) PRIMARY KEY ON CONFLICT IGNORE, ' \
-                'value VARCHAR(255) NOT NULL ' \
-                ')'
-        self.db.execute(query)
-
-        query = 'INSERT INTO schedule_metadata ' \
-                '(key, value) values ("version", "1") '
         self.db.execute(query)
         self.db.commit()
 
@@ -162,8 +214,7 @@ class Schedule:
 
         :param job_status: One of :class:`statuses <Status>`
         """
-        query = "SELECT * FROM {table} WHERE status=? ORDER BY timestamp DESC"
-        query = query.format(table=self.table)
+        query = "SELECT * FROM schedule WHERE status=? ORDER BY timestamp DESC"
         response = self.db.execute(query, (job_status.value, ))
         return [_record_to_job(rec) for rec in response]
 
@@ -174,10 +225,9 @@ class Schedule:
         the following: :data:`SCHEDULED <Status.SCHEDULED>`,
         :data:`PENDING <Status.PENDING>`, or :data:`RUNNING <Status.RUNNING>`.
         """
-        query = "SELECT * FROM {table} WHERE " \
+        query = "SELECT * FROM schedule WHERE " \
                 "status=1 OR status=2 OR status=3 "\
                 "ORDER BY timestamp DESC"
-        query = query.format(table=self.table)
         response = self.db.execute(query)
         return [_record_to_job(rec) for rec in response]
 
@@ -188,10 +238,9 @@ class Schedule:
         the  following: :data:`SUCCESSFUL <Status.SUCCESSFUL>`,
         :data:`FAILED <Status.FAILED>`, or :data:`CANCELED <Status.CANCELED>`.
         """
-        query = "SELECT * FROM {table} WHERE " \
+        query = "SELECT * FROM schedule WHERE " \
                 "status=4 OR status=5 OR status=6 "\
                 "ORDER BY timestamp DESC"
-        query = query.format(table=self.table)
         response = self.db.execute(query)
         return [_record_to_job(rec) for rec in response]
 
@@ -200,10 +249,9 @@ class Schedule:
         """
         Retrieve all the scheduled jobs for the given project.
         """
-        query = "SELECT * FROM {table} WHERE " \
+        query = "SELECT * FROM schedule WHERE " \
                 "status=1 AND project=?" \
                 "ORDER BY timestamp DESC"
-        query = query.format(table=self.table)
         response = self.db.execute(query, (project, ))
         return [_record_to_job(rec) for rec in response]
 
@@ -214,8 +262,7 @@ class Schedule:
 
         :param identifier: A string identifier of the job
         """
-        query = "SELECT * FROM {table} WHERE identifier=?"
-        query = query.format(table=self.table)
+        query = "SELECT * FROM schedule WHERE identifier=?"
         response = self.db.execute(query, (identifier, ))
         rec = response.fetchone()
         if rec is None:
@@ -229,14 +276,14 @@ class Schedule:
 
         :param job: A :class:`Job <Job>` object
         """
-        query = "INSERT INTO {table}" \
+        query = "INSERT INTO schedule" \
                 "(identifier, status, actor, schedule, project, spider, " \
-                "timestamp, duration) " \
-                "values (?, ?, ?, ?, ?, ?, ?, ?)"
-        query = query.format(table=self.table)
+                "timestamp, duration, title, payload) " \
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self.db.execute(query, (job.identifier, job.status.value,
                                 job.actor.value, job.schedule, job.project,
-                                job.spider, job.timestamp, job.duration))
+                                job.spider, job.timestamp, job.duration,
+                                job.title, job.payload))
         self.db.commit()
 
     #---------------------------------------------------------------------------
@@ -246,14 +293,14 @@ class Schedule:
 
         :param job: A :class:`Job <Job>` object
         """
-        query = "REPLACE INTO {table}" \
+        query = "REPLACE INTO schedule" \
                 "(identifier, status, actor, schedule, project, spider, " \
-                "timestamp, duration) " \
-                "values (?, ?, ?, ?, ?, ?, ?, ?)"
-        query = query.format(table=self.table)
+                "timestamp, duration, title, payload) " \
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self.db.execute(query, (job.identifier, job.status.value,
                                 job.actor.value, job.schedule, job.project,
-                                job.spider, job.timestamp, job.duration))
+                                job.spider, job.timestamp, job.duration,
+                                job.title, job.payload))
         self.db.commit()
 
     #---------------------------------------------------------------------------
@@ -263,7 +310,6 @@ class Schedule:
 
         :param identifier: A string identifier of the job
         """
-        query = "DELETE FROM {table} WHERE identifier=?"
-        query = query.format(table=self.table)
+        query = "DELETE FROM schedule WHERE identifier=?"
         self.db.execute(query, (job_id,))
         self.db.commit()
