@@ -6,6 +6,10 @@
 #-------------------------------------------------------------------------------
 
 import unittest
+import tempfile
+import shutil
+import glob
+import os
 
 from scrapy_do.schedule import Schedule, Job, Status, Actor
 
@@ -33,7 +37,8 @@ class ScheduleTests(unittest.TestCase):
         self.job7 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
                         project='testproj7', spider='testspider7')
         self.job8 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
-                        project='testproj8', spider='testspider8')
+                        project='testproj8', spider='testspider8',
+                        title='testproj8', payload='{"foo": "bar"}')
 
         self.schedule.add_job(self.job1)
         self.schedule.add_job(self.job2)
@@ -54,6 +59,26 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(job1.spider, job2.spider)
         self.assertEqual(job1.timestamp, job2.timestamp)
         self.assertEqual(job1.duration, job2.duration)
+        self.assertEqual(job1.title, job2.title)
+        self.assertEqual(job1.payload, job2.payload)
+
+    #---------------------------------------------------------------------------
+    def test_upgrade_from_v1_to_v2(self):
+        db_file_orig = os.path.join(os.path.dirname(__file__),
+                                    'schedule-v1.db')
+        tmp_dir = tempfile.mkdtemp()
+        db_file_test = os.path.join(tmp_dir, 'schedule-v1.db')
+        shutil.copyfile(db_file_orig, db_file_test)
+
+        schedule = Schedule(db_file_test)
+        jobs = schedule.get_active_jobs()
+        for job in jobs:
+            title = '{} ({})'.format(job.spider, job.project)
+            self.assertEqual(job.title, title)
+
+        lst = glob.glob(db_file_test + '.orig*')
+        self.assertEqual(len(lst), 1)
+        shutil.rmtree(tmp_dir)
 
     #---------------------------------------------------------------------------
     def test_retrieval(self):
@@ -120,6 +145,6 @@ class ScheduleTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def test_metadata(self):
-        self.assertEqual(int(self.schedule.get_metadata('version')), 1)
+        self.assertEqual(int(self.schedule.get_metadata('version')), 2)
         with self.assertRaises(KeyError):
             self.schedule.get_metadata('foo')
