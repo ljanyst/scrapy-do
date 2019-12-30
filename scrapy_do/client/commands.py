@@ -231,6 +231,7 @@ def schedule_job_arg_process(args):
     if args.title:
         title = args.title
 
+    payload = '{}'
     try:
         obj = json.loads(args.payload)
         payload = json.dumps(obj, ensure_ascii=False)
@@ -243,7 +244,7 @@ def schedule_job_arg_process(args):
         'spider': args.spider,
         'when': args.when,
         'title': title,
-        'payload': args.payload
+        'payload': payload
     }
 
 
