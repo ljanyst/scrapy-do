@@ -5,6 +5,7 @@
 # Licensed under the 3-Clause BSD License, see the LICENSE file for details.
 #-------------------------------------------------------------------------------
 
+import json
 import sys
 import os
 
@@ -212,6 +213,10 @@ def schedule_job_arg_setup(subparsers):
                         help='spider name')
     parser.add_argument('--when', type=str, default='now',
                         help='scheduling spec')
+    parser.add_argument('--title', type=str, default=None,
+                        help='title of the job')
+    parser.add_argument('--payload', type=str, default='{}',
+                        help='payload')
 
 
 def schedule_job_arg_process(args):
@@ -222,10 +227,23 @@ def schedule_job_arg_process(args):
         print('[!] You need to specify the spider name.')
         sys.exit(1)
 
+    title = args.spider
+    if args.title:
+        title = args.title
+
+    try:
+        obj = json.loads(args.payload)
+        payload = json.dumps(obj, ensure_ascii=False)
+    except ValueError as e:
+        print('[!] Cannot parse the JSON payload: ' + str(e))
+        sys.exit(1)
+
     return {
         'project': args.project,
         'spider': args.spider,
-        'when': args.when
+        'when': args.when,
+        'title': title,
+        'payload': args.payload
     }
 
 
