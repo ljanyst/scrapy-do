@@ -222,13 +222,19 @@ class ClientTests(unittest.TestCase):
         args.project = 'foo'
         args.spider = 'bar'
         args.when = 'now'
+        args.title = 'bartitle'
+        args.payload = '{}'
         payload = cmd.schedule_job_arg_process(args)
         self.assertIn('project', payload)
         self.assertIn('spider', payload)
         self.assertIn('when', payload)
+        self.assertIn('title', payload)
+        self.assertIn('payload', payload)
         self.assertEqual(payload['project'], 'foo')
         self.assertEqual(payload['spider'], 'bar')
         self.assertEqual(payload['when'], 'now')
+        self.assertEqual(payload['title'], 'bartitle')
+        self.assertEqual(payload['payload'], '{}')
 
         args.project = None
         with patch('sys.exit') as exit:
@@ -238,6 +244,14 @@ class ClientTests(unittest.TestCase):
 
         args.project = 'foo'
         args.spider = None
+        with patch('sys.exit') as exit:
+            with patch('builtins.print'):
+                cmd.schedule_job_arg_process(args)
+                exit.assert_called_once()
+
+        args.project = 'foo'
+        args.spider = 'bar'
+        args.payload = 'foo'
         with patch('sys.exit') as exit:
             with patch('builtins.print'):
                 cmd.schedule_job_arg_process(args)
