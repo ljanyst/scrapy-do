@@ -137,7 +137,7 @@ class JsonResource(resource.Resource):
 
     #---------------------------------------------------------------------------
     def render_json(self, request, data):
-        json_data = json.dumps(data) + '\n'
+        json_data = json.dumps(data, ensure_ascii=False) + '\n'
         json_data = json_data.encode('utf-8')
         request.setHeader('Content-Type', 'application/json')
         request.setHeader('Content-Length', str(len(json_data)))

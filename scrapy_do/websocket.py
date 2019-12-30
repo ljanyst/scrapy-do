@@ -135,7 +135,7 @@ class WSProtocol(WebSocketServerProtocol):
         Convert a message dictionary to JSON and send it over to a client.
         """
 
-        data = json.dumps(msg) + '\n'
+        data = json.dumps(msg, ensure_ascii=False) + '\n'
         data = data.encode('utf-8')
         self.sendMessage(data)
 
