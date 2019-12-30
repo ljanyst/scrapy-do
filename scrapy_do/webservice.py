@@ -264,7 +264,17 @@ class ScheduleJob(JsonResource):
         spider = request.args[b'spider'][0].decode('utf-8')
         when = request.args[b'when'][0].decode('utf-8')
 
-        job_id = self.parent.controller.schedule_job(project, spider, when)
+        title = None
+        if b'title' in request.args:
+            title = request.args[b'title'][0].decode('utf-8')
+
+        payload = None
+        if b'payload' in request.args:
+            payload = request.args[b'payload'][0].decode('utf-8')
+
+        job_id = self.parent.controller.schedule_job(project, spider, when,
+                                                     title=title,
+                                                     payload=payload)
         return {'identifier': job_id}
 
 
