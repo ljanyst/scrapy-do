@@ -123,8 +123,8 @@ def list_jobs_arg_process(args):
 
 def list_jobs_rsp_parse(rsp):
     data = []
-    headers = ['identifier', 'project', 'spider', 'status', 'schedule', 'actor',
-               'timestamp', 'duration']
+    headers = ['identifier', 'title', 'project', 'spider', 'status', 'schedule',
+               'actor', 'timestamp', 'duration', 'payload']
     for job in rsp['jobs']:
         datum = []
         for h in headers:
