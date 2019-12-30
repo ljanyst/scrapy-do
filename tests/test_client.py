@@ -314,10 +314,12 @@ class ClientTests(unittest.TestCase):
             'schedule': 'foo',
             'actor': 'foo',
             'timestamp': 'foo',
-            'duration': 'foo'
+            'duration': 'foo',
+            'title': 'foo',
+            'payload': '{}'
         }]}
         ret = cmd.list_jobs_rsp_parse(rsp)
-        self.assertIn(['foo'] * 8, ret['data'])
+        self.assertIn(['foo'] * 9 + ['{}'], ret['data'])
 
         #-----------------------------------------------------------------------
         # Push project
