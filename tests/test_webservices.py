@@ -6,6 +6,7 @@
 #-------------------------------------------------------------------------------
 
 import json
+import uuid
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.webservice import Status, PushProject, ListProjects, ListSpiders
@@ -213,12 +214,21 @@ class WebServicesTests(unittest.TestCase):
     #---------------------------------------------------------------------------
     def test_schedule_job(self):
         service = ScheduleJob(self.web_app)
+
+        payload = {
+            'test1': str(uuid.uuid4()),
+            'test2': [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())],
+            'test3': 1234567890
+        }
+
         request = Mock()
         request.method = 'POST'
         request.args = {
             b'project': [b'quotesbot'],
             b'spider': [b'toscrap-css'],
-            b'when': [b'now']
+            b'when': [b'now'],
+            b'title': [b'quotesbot'],
+            b'payload': [json.dumps(payload).encode('utf-8')]
         }
         retval = service.render(request)
         decoded = json.loads(retval)
