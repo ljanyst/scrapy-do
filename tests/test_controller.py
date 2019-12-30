@@ -7,6 +7,8 @@
 
 import tempfile
 import shutil
+import uuid
+import json
 import os
 
 from twisted.internet.defer import inlineCallbacks
@@ -243,7 +245,15 @@ class ControllerTests(unittest.TestCase):
         job1_id = controller.schedule_job('quotesbot', 'toscrape-css',
                                           'every 25 minutes')
         job2_id = controller.schedule_job('quotesbot', 'toscrape-xpath', 'now')
-        job3_id = controller.schedule_job('quotesbot', 'toscrape-css', 'now')
+        job3_id = controller.schedule_job('quotesbot', 'toscrape-css', 'now',
+                                          payload='{}')
+
+        try:
+            controller.schedule_job('quotesbot', 'toscrape-css', 'now',
+                                    payload="foo")
+            self.assertFail()
+        except ValueError as e:
+            self.assertTrue(str(e).startswith('Payload is not a valid JSON'))
 
         #-----------------------------------------------------------------------
         # Retrieve the jobs
@@ -325,16 +335,30 @@ class ControllerTests(unittest.TestCase):
         yield controller.push_project(self.project_archive_data)
         temp_dir = tempfile.mkdtemp()
 
+        payload = {
+            'test1': str(uuid.uuid4()),
+            'test2': [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())],
+            'test3': 1234567890
+        }
+
         with patch('tempfile.mkdtemp') as mock_mkdtemp:
             mock_mkdtemp.return_value = temp_dir
             _, finished = yield controller._run_crawler('quotesbot',
-                                                        'toscrape-css', 'foo')
+                                                        'toscrape-css', 'foo',
+                                                        json.dumps(payload))
 
         status = yield finished
         self.assertEqual(status, 0)
         self.assertFalse(os.path.exists(temp_dir))
-        log_file = os.path.join(controller.log_dir, 'foo.err')
-        self.assertTrue(os.path.exists(log_file))
+        err_file = os.path.join(controller.log_dir, 'foo.err')
+        self.assertTrue(os.path.exists(err_file))
+        out_file = os.path.join(controller.log_dir, 'foo.out')
+        with open(out_file, 'rb') as f:
+            contents = f.read().decode('utf-8')
+            self.assertIn(payload['test1'], contents)
+            for id in payload['test2']:
+                self.assertIn(id, contents)
+            self.assertIn(str(payload['test3']), contents)
 
         #-----------------------------------------------------------------------
         # Unzip not found
@@ -342,7 +366,7 @@ class ControllerTests(unittest.TestCase):
         with patch('scrapy_do.controller.find_executable') as fe_mock:
             fe_mock.side_effect = [None]
             try:
-                yield controller._run_crawler('foo', 'bar', 'foo')
+                yield controller._run_crawler('foo', 'bar', 'foo', '{}')
                 self.fail('Unzipping a without unzip should have risen '
                           'an EnvironmentError')
             except EnvironmentError as e:
@@ -352,7 +376,7 @@ class ControllerTests(unittest.TestCase):
         # Test the unzipping failuer
         #-----------------------------------------------------------------------
         try:
-            yield controller._run_crawler('foo', 'bar', 'foo')
+            yield controller._run_crawler('foo', 'bar', 'foo', '{}')
             self.fail('Unzipping a non-existent archive should have risen '
                       'an IOError')
         except IOError as e:
@@ -403,10 +427,13 @@ class ControllerTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         # Test the log getter
         #-----------------------------------------------------------------------
-        job = successful_jobs[0]
-        log = controller.get_job_logs(job.identifier)
-        self.assertEqual(log[0], None)
-        self.assertNotEqual(log[1], None)
+        for job in successful_jobs:
+            log = controller.get_job_logs(job.identifier)
+            if job.spider == 'toscrape-css':
+                self.assertNotEqual(log[0], None)
+            else:
+                self.assertEqual(log[0], None)
+            self.assertNotEqual(log[1], None)
 
         #-----------------------------------------------------------------------
         # Test failure to spawn a job
