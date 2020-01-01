@@ -113,14 +113,16 @@ class JobListItem extends Component {
     // Cancellation button
     //--------------------------------------------------------------------------
     let cancelButton = (
-      <Button
-        variant="outline-secondary"
-        size="sm"
-        disabled={!this.props.connected}
-        onClick={this.showCancelDialog}
-      >
-        Cancel
-      </Button>
+      <div className='item-panel-button'>
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          disabled={!this.props.connected}
+          onClick={this.showCancelDialog}
+        >
+          Cancel
+        </Button>
+      </div>
     );
 
     //--------------------------------------------------------------------------
@@ -179,6 +181,8 @@ class JobListItem extends Component {
       );
 
     if(this.props.jobList === 'COMPLETED') {
+      cancelButton = null;
+
       if (!job.outLog) {
         outToggle = null;
         outCollapse = null;
@@ -225,13 +229,11 @@ class JobListItem extends Component {
 
     const secondaryPanel = (
       <div className='item-panel' title={dateTime}>
-        <div className='item-panel-links'>
-          {outToggle}
-          {outToggle && (errToggle || payloadToggle) ? ' | ' : ''}
-          {errToggle}
-          {errToggle && payloadToggle ? ' | ' : ''}
-          {payloadToggle}
-        </div>
+        {outToggle}
+        {outToggle && (errToggle || payloadToggle) ? ' | ' : ''}
+        {errToggle}
+        {errToggle && payloadToggle ? ' | ' : ''}
+        {payloadToggle}
         {cancelButton}
       </div>
     );

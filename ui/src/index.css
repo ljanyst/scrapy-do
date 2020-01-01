@@ -55,9 +55,9 @@ th {
     float: right;
 }
 
-.item-panel-links {
+.item-panel-button {
     display: inline-block;
-    margin-right: 1em;
+    margin-left: 1em;
 }
 
 .list-item {
