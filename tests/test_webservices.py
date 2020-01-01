@@ -227,7 +227,7 @@ class WebServicesTests(unittest.TestCase):
             b'project': [b'quotesbot'],
             b'spider': [b'toscrap-css'],
             b'when': [b'now'],
-            b'title': [b'quotesbot'],
+            b'description': [b'foo'],
             b'payload': [json.dumps(payload).encode('utf-8')]
         }
         retval = service.render(request)

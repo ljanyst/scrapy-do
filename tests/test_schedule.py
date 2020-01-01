@@ -38,7 +38,7 @@ class ScheduleTests(unittest.TestCase):
                         project='testproj7', spider='testspider7')
         self.job8 = Job(status=Status.CANCELED, actor=Actor.SCHEDULER,
                         project='testproj8', spider='testspider8',
-                        title='testproj8', payload='{"foo": "bar"}')
+                        description='foo', payload='{"foo": "bar"}')
 
         self.schedule.add_job(self.job1)
         self.schedule.add_job(self.job2)
@@ -59,7 +59,7 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(job1.spider, job2.spider)
         self.assertEqual(job1.timestamp, job2.timestamp)
         self.assertEqual(job1.duration, job2.duration)
-        self.assertEqual(job1.title, job2.title)
+        self.assertEqual(job1.description, job2.description)
         self.assertEqual(job1.payload, job2.payload)
 
     #---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ class ScheduleTests(unittest.TestCase):
         schedule = Schedule(db_file_test)
         jobs = schedule.get_active_jobs()
         for job in jobs:
-            self.assertEqual(job.title, job.spider)
+            self.assertEqual(job.description, '')
 
         self.assertEqual(int(self.schedule.get_metadata('version')), 2)
 

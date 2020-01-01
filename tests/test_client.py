@@ -222,18 +222,18 @@ class ClientTests(unittest.TestCase):
         args.project = 'foo'
         args.spider = 'bar'
         args.when = 'now'
-        args.title = 'bartitle'
+        args.description = 'bartitle'
         args.payload = '{}'
         payload = cmd.schedule_job_arg_process(args)
         self.assertIn('project', payload)
         self.assertIn('spider', payload)
         self.assertIn('when', payload)
-        self.assertIn('title', payload)
+        self.assertIn('description', payload)
         self.assertIn('payload', payload)
         self.assertEqual(payload['project'], 'foo')
         self.assertEqual(payload['spider'], 'bar')
         self.assertEqual(payload['when'], 'now')
-        self.assertEqual(payload['title'], 'bartitle')
+        self.assertEqual(payload['description'], 'bartitle')
         self.assertEqual(payload['payload'], '{}')
 
         args.project = None
@@ -329,7 +329,7 @@ class ClientTests(unittest.TestCase):
             'actor': 'foo',
             'timestamp': 'foo',
             'duration': 'foo',
-            'title': 'foo',
+            'description': 'foo',
             'payload': '{}'
         }]}
         ret = cmd.list_jobs_rsp_parse(rsp)
