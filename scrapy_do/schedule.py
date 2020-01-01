@@ -165,13 +165,19 @@ class Schedule:
 
     #---------------------------------------------------------------------------
     def _open_database(self, version):
-        bak_file = self.database + '.orig.'
+        bak_file = self.database + '.bak.'
         bak_file += datetime.now().strftime('%Y%m%d-%H%M%S')
         shutil.copyfile(self.database, bak_file)
         upgraders = {}
         upgraders[1] = self._upgrade_v1_to_v2
         for v in range(version, self.CURRENT_VERSION):
             upgraders[v]()
+
+        query = 'UPDATE schedule_metadata ' \
+                'SET value = ?' \
+                'WHERE key = "version";'
+        self.db.execute(query, (str(self.CURRENT_VERSION),))
+        self.db.commit()
 
     #---------------------------------------------------------------------------
     def _create_database(self):
