@@ -109,3 +109,19 @@ export function scheduleValid(spec) {
 
   return true;
 }
+
+//------------------------------------------------------------------------------
+// Validate payload
+//------------------------------------------------------------------------------
+export function payloadValid(str) {
+  var obj = null;
+  try {
+    obj = JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  if (typeof obj === 'object' && obj !== null) {
+    return true;
+  }
+  return false;
+}

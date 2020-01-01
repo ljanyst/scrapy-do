@@ -13,7 +13,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 
 import { jobSchedule } from '../utils/backendActions';
-import { scheduleValid } from '../utils/helpers';
+import { scheduleValid, payloadValid } from '../utils/helpers';
 
 import AlertDialog from './AlertDialog';
 
@@ -30,11 +30,13 @@ class ScheduleDialog extends Component {
     spider: '__select',
     schedule: 'now',
     description: '',
+    payload: '{\n}',
     projectsDisabled: false,
     spidersDisabled: true,
     scheduleDisabled: true,
     submitDisabled: true,
-    scheduleValidated: true
+    scheduleValidated: true,
+    payloadValidated: true
   }
 
   //----------------------------------------------------------------------------
@@ -67,25 +69,13 @@ class ScheduleDialog extends Component {
       spider: spider ? spider : '__select',
       schedule: 'now',
       description: '',
+      payload: '{\n}',
       projectsDisabled: project ? true : false,
       spidersDisabled: true,
       scheduleDisabled: project && spider ? false : true,
       submitDisabled: project && spider ? false : true,
-      validated: true
-    });
-  }
-
-  //----------------------------------------------------------------------------
-  // Show the dialog for a given spider
-  //----------------------------------------------------------------------------
-  showForSpider = (project, spider) => {
-    this.setState({
-      show: true,
-      project,
-      spider,
-      projectsDisabled: true,
-      scheduleDisabled: false,
-      submitDisabled: false
+      scheduleValidated: true,
+      payloadValidated: true
     });
   }
 
@@ -97,7 +87,8 @@ class ScheduleDialog extends Component {
       this.state.project,
       this.state.spider,
       this.state.schedule,
-      this.state.description
+      this.state.description,
+      this.state.payload
     )
       .catch(error => {
         setTimeout(() => this.alert.show(error.message), 250);
@@ -150,6 +141,18 @@ class ScheduleDialog extends Component {
       schedule: event.target.value,
       scheduleValidated: scheduleValidated,
       submitDisabled: !scheduleValidated
+    });
+  };
+
+  //----------------------------------------------------------------------------
+  // On payload change
+  //----------------------------------------------------------------------------
+  onPayloadChange = (event) => {
+    const payloadValidated = payloadValid(event.target.value);
+    this.setState({
+      payload: event.target.value,
+      payloadValidated: payloadValidated,
+      submitDisabled: !payloadValidated
     });
   };
 
@@ -241,7 +244,7 @@ class ScheduleDialog extends Component {
     // Description input
     //--------------------------------------------------------------------------
     const descriptionInput = (
-      <Form.Group controlId='scheduleInput'>
+      <Form.Group controlId='descriptionInput'>
         <Form.Label>Description (optional)</Form.Label>
         <Form.Control
           type='text'
@@ -249,6 +252,31 @@ class ScheduleDialog extends Component {
           value={this.state.description}
           onChange={(event) => this.setState({description: event.target.value})}
         />
+      </Form.Group>
+    );
+
+    //--------------------------------------------------------------------------
+    // Payload input
+    //--------------------------------------------------------------------------
+    const payloadInput = (
+      <Form.Group controlId='payloadInput'>
+        <Form.Label>Payload (optional)</Form.Label>
+        <Form.Control
+          as='textarea'
+          rows={5}
+          disabled={this.state.scheduleDisabled}
+          value={this.state.payload}
+          onChange={this.onPayloadChange}
+          isInvalid={!this.state.payloadValidated}
+          isValid={this.state.payloadValidated}
+        />
+        <Form.Control.Feedback type="valid">
+          Payload needs to be a valid JSON object.
+        </Form.Control.Feedback>
+
+        <Form.Control.Feedback type="invalid">
+          Payload needs to be a valid JSON object.
+        </Form.Control.Feedback>
       </Form.Group>
     );
 
@@ -269,6 +297,7 @@ class ScheduleDialog extends Component {
               {spiderSelector}
               {scheduleInput}
               {descriptionInput}
+              {payloadInput}
             </div>
           </Modal.Body>
           <Modal.Footer>
