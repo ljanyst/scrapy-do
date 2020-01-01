@@ -75,7 +75,9 @@ class ScheduleTests(unittest.TestCase):
         for job in jobs:
             self.assertEqual(job.title, job.spider)
 
-        lst = glob.glob(db_file_test + '.orig*')
+        self.assertEqual(int(self.schedule.get_metadata('version')), 2)
+
+        lst = glob.glob(db_file_test + '.bak*')
         self.assertEqual(len(lst), 1)
         shutil.rmtree(tmp_dir)
 
