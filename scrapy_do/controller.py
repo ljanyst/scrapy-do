@@ -302,8 +302,8 @@ class Controller(Service):
         return self.projects[project_name].spiders
 
     #---------------------------------------------------------------------------
-    def schedule_job(self, project, spider, when, actor=Actor.USER, title=None,
-                     payload=None):
+    def schedule_job(self, project, spider, when, actor=Actor.USER,
+                     description='', payload='{}'):
         """
         Schedule a crawler job.
 
@@ -313,8 +313,8 @@ class Controller(Service):
                         <scrapy_do.utils.schedule_job>`
         :param actor:   :data:`Actor <scrapy_do.schedule.Actor>` triggering the
                         event
-        :param title:   Title of the job (optional), defaults to the name of the
-                        spider
+        :param description: Description of the job instance (optional), defaults
+                            to empty string
         :param payload: A serialized JSON object with user data, defaults to an
                         empty object
         :return:        A string identifier of a job
@@ -325,24 +325,19 @@ class Controller(Service):
         if spider not in self.projects[project].spiders:
             raise ValueError('Unknown spider {}/{}'.format(project, spider))
 
-        if not title:
-            title = spider
-
-        if payload:
-            try:
-                json.loads(payload)
-            except ValueError as e:
-                msg = str(e)
-                raise ValueError('Payload is not a valid JSON string: ' + msg)
-        else:
-            payload = '{}'
+        try:
+            json.loads(payload)
+        except ValueError as e:
+            msg = str(e)
+            raise ValueError('Payload is not a valid JSON string: ' + msg)
 
         job = Job(status=Status.PENDING, actor=actor, schedule='now',
-                  project=project, spider=spider, title=title, payload=payload)
+                  project=project, spider=spider, description=description,
+                  payload=payload)
         if when != 'now':
             sch_job = schedule_job(self.scheduler, when)
             sch_job.do(lambda: self.schedule_job(project, spider, 'now',
-                                                 Actor.SCHEDULER, title,
+                                                 Actor.SCHEDULER, description,
                                                  payload))
             self.scheduled_jobs[job.identifier] = sch_job
             job.status = Status.SCHEDULED

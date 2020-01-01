@@ -123,8 +123,8 @@ def list_jobs_arg_process(args):
 
 def list_jobs_rsp_parse(rsp):
     data = []
-    headers = ['identifier', 'title', 'project', 'spider', 'status', 'schedule',
-               'actor', 'timestamp', 'duration', 'payload']
+    headers = ['identifier', 'project', 'spider', 'status', 'schedule',
+               'description', 'actor', 'timestamp', 'duration', 'payload']
     for job in rsp['jobs']:
         datum = []
         for h in headers:
@@ -213,8 +213,8 @@ def schedule_job_arg_setup(subparsers):
                         help='spider name')
     parser.add_argument('--when', type=str, default='now',
                         help='scheduling spec')
-    parser.add_argument('--title', type=str, default=None,
-                        help='title of the job')
+    parser.add_argument('--description', type=str, default='',
+                        help='description of the job')
     parser.add_argument('--payload', type=str, default='{}',
                         help='payload')
 
@@ -226,10 +226,6 @@ def schedule_job_arg_process(args):
     if args.spider is None:
         print('[!] You need to specify the spider name.')
         sys.exit(1)
-
-    title = args.spider
-    if args.title:
-        title = args.title
 
     payload = '{}'
     try:
@@ -243,7 +239,7 @@ def schedule_job_arg_process(args):
         'project': args.project,
         'spider': args.spider,
         'when': args.when,
-        'title': title,
+        'description': args.description,
         'payload': payload
     }
 
