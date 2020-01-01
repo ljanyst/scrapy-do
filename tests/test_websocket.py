@@ -189,7 +189,8 @@ class WebSocketTests(unittest.TestCase):
             msg = {
                 'type': 'ACTION',
                 'action': 'JOB_SCHEDULE',
-                'id': 'foo'
+                'id': 'foo',
+                'description': 'foo'
             }
             data = json_encode(msg)
             protocol.onMessage(data, False)
