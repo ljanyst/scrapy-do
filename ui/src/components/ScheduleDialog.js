@@ -218,9 +218,15 @@ class ScheduleDialog extends Component {
           isInvalid={!this.state.scheduleValidated}
           isValid={this.state.scheduleValidated}
         />
-        <Form.Text className="text-muted">
+
+        <Form.Control.Feedback type="valid">
           See the <a href={specDocLink}>docs</a> on scheduling specs.
-        </Form.Text>
+        </Form.Control.Feedback>
+
+        <Form.Control.Feedback type="invalid">
+          See the <a href={specDocLink}>docs</a> on scheduling specs.
+        </Form.Control.Feedback>
+
       </Form.Group>
     );
 
