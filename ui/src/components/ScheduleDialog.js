@@ -29,6 +29,7 @@ class ScheduleDialog extends Component {
     project: '__select',
     spider: '__select',
     schedule: 'now',
+    description: '',
     projectsDisabled: false,
     spidersDisabled: true,
     scheduleDisabled: true,
@@ -65,6 +66,7 @@ class ScheduleDialog extends Component {
       project: project ? project : '__select',
       spider: spider ? spider : '__select',
       schedule: 'now',
+      description: '',
       projectsDisabled: project ? true : false,
       spidersDisabled: true,
       scheduleDisabled: project && spider ? false : true,
@@ -91,7 +93,12 @@ class ScheduleDialog extends Component {
   // Schedule the job
   //----------------------------------------------------------------------------
   schedule = () => {
-    jobSchedule(this.state.project, this.state.spider, this.state.schedule)
+    jobSchedule(
+      this.state.project,
+      this.state.spider,
+      this.state.schedule,
+      this.state.description
+    )
       .catch(error => {
         setTimeout(() => this.alert.show(error.message), 250);
       });
@@ -231,6 +238,21 @@ class ScheduleDialog extends Component {
     );
 
     //--------------------------------------------------------------------------
+    // Description input
+    //--------------------------------------------------------------------------
+    const descriptionInput = (
+      <Form.Group controlId='scheduleInput'>
+        <Form.Label>Description (optional)</Form.Label>
+        <Form.Control
+          type='text'
+          disabled={this.state.scheduleDisabled}
+          value={this.state.description}
+          onChange={(event) => this.setState({description: event.target.value})}
+        />
+      </Form.Group>
+    );
+
+    //--------------------------------------------------------------------------
     // The whole thing
     //--------------------------------------------------------------------------
     return (
@@ -246,6 +268,7 @@ class ScheduleDialog extends Component {
               {projectSelector}
               {spiderSelector}
               {scheduleInput}
+              {descriptionInput}
             </div>
           </Modal.Body>
           <Modal.Footer>
