@@ -8,6 +8,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import 'bootstrap/dist/css/bootstrap.css';
+import 'highlight.js/styles/zenburn.css';
 import './bootstrap-layout.css';
 import './index.css';
 import registerServiceWorker from './registerServiceWorker';

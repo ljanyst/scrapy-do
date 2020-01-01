@@ -12,6 +12,7 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
 import moment from 'moment-timezone';
+import hljs from 'highlight.js';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
@@ -19,6 +20,7 @@ import { jobCancel } from '../utils/backendActions';
 
 import YesNoDialog from './YesNoDialog';
 import AlertDialog from './AlertDialog';
+import JobAccordion from './JobAccordion';
 
 //------------------------------------------------------------------------------
 // Convert status to label class
@@ -139,6 +141,26 @@ class JobListItem extends Component {
     }
 
     //--------------------------------------------------------------------------
+    // Payload
+    //--------------------------------------------------------------------------
+    let payloadAccordion = null;
+    if (job.payload !== '{}') {
+      var payload = JSON.stringify(JSON.parse(job.payload), null, 4);
+      const highlighted = hljs.highlight('json', payload).value;
+      payloadAccordion = (
+        <JobAccordion
+          eventKey={`payload-${job.identifier}`}
+          textInactive='Show payload'
+          textActive='Hide payload'
+        >
+          <pre className='hljs'>
+            <code dangerouslySetInnerHTML={{__html: highlighted}} />
+          </pre>
+        </JobAccordion>
+      );
+    }
+
+    //--------------------------------------------------------------------------
     // Render the whole thing
     //--------------------------------------------------------------------------
     var description = '';
@@ -150,19 +172,22 @@ class JobListItem extends Component {
       <ListGroup.Item>
         <YesNoDialog ref={(el) => { this.cancelDialog = el; }} />
         <AlertDialog ref={(el) => { this.alertDialog = el; }} />
-        <div className='list-item'>
-          <div className='item-panel' title={dateTime}>
-            {timestamp.fromNow()}
+        <div className='list-group-item-body'>
+          <div className='list-item'>
+            <div className='item-panel' title={dateTime}>
+              {timestamp.fromNow()}
+            </div>
+            <Badge variant={statusToLabel(job.status)}>
+              {job.status}
+            </Badge>
+            <strong> {job.spider} {description}</strong> ({job.project})
           </div>
-          <Badge variant={statusToLabel(job.status)}>
-            {job.status}
-          </Badge>
-          <strong> {job.spider} {description}</strong> ({job.project})
+          <div className='list-item-secondary'>
+            {secondaryPanel}
+            Scheduled by {capitalizeFirst(job.actor)} to run {job.schedule}.
+          </div>
         </div>
-        <div className='list-item-secondary'>
-          {secondaryPanel}
-          Scheduled by {capitalizeFirst(job.actor)} to run {job.schedule}.
-        </div>
+        {payloadAccordion}
       </ListGroup.Item>
     );
   }
