@@ -6,9 +6,11 @@
 //------------------------------------------------------------------------------
 
 import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, Glyphicon } from 'react-bootstrap';
+
+import { FaChartLine, FaBlender, FaBolt, FaRegCheckSquare } from 'react-icons/fa';
+import Nav from 'react-bootstrap/Nav';
+import Navbar from 'react-bootstrap/Navbar';
 import { LinkContainer } from 'react-router-bootstrap';
-import { Link } from 'react-router-dom';
 
 //------------------------------------------------------------------------------
 // The navigation bar
@@ -20,32 +22,30 @@ class ScrapyDoNav extends Component {
   //----------------------------------------------------------------------------
   render() {
     return (
-      <Navbar inverse collapseOnSelect>
-        <Navbar.Header>
+      <Navbar bg='dark' variant='dark' collapseOnSelect expand='md'>
+        <LinkContainer to="/">
           <Navbar.Brand>
-            <Link to="/">
-              Scrapy Do
-            </Link>
+            Scrapy Do
           </Navbar.Brand>
-          <Navbar.Toggle />
-        </Navbar.Header>
-        <Navbar.Collapse>
-          <Nav pullRight>
+        </LinkContainer>
+        <Navbar.Toggle aria-controls="navbar" />
+        <Navbar.Collapse id="navbar">
+          <Nav className="mr-auto" />
+          <Nav>
             <LinkContainer to="/dashboard">
-              <NavItem><Glyphicon glyph='dashboard'/> Dashboard</NavItem>
+              <Nav.Link><FaChartLine /> Dashboard</Nav.Link>
             </LinkContainer>
-
             <LinkContainer to="/project-list">
-              <NavItem><Glyphicon glyph='compressed'/> Projects</NavItem>
+              <Nav.Link><FaBlender /> Projects</Nav.Link>
             </LinkContainer>
             <LinkContainer to="/job-list/active">
-              <NavItem><Glyphicon glyph='flash'/> Active Jobs</NavItem>
+              <Nav.Link><FaBolt /> Active Jobs</Nav.Link>
             </LinkContainer>
             <LinkContainer to="/job-list/completed">
-              <NavItem><Glyphicon glyph='check'/> Completed Jobs</NavItem>
+              <Nav.Link><FaRegCheckSquare /> Completed Jobs</Nav.Link>
             </LinkContainer>
           </Nav>
-          </Navbar.Collapse>
+        </Navbar.Collapse>
       </Navbar>
     );
   }

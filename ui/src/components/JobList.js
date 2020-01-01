@@ -7,7 +7,10 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Panel, Button, Glyphicon, ListGroup } from 'react-bootstrap';
+import { FaCalendarAlt } from 'react-icons/fa';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
 import sortBy from 'sort-by';
 
 import { BACKEND_OPENED } from '../actions/backend';
@@ -21,13 +24,6 @@ import ScheduleDialog from './ScheduleDialog';
 //------------------------------------------------------------------------------
 class JobList extends Component {
   //----------------------------------------------------------------------------
-  // Show the schedule dialog
-  //----------------------------------------------------------------------------
-  showScheduleDialog = () => {
-    this.scheduleDialogCtl.show();
-  };
-
-  //----------------------------------------------------------------------------
   // Render
   //----------------------------------------------------------------------------
   render() {
@@ -38,10 +34,11 @@ class JobList extends Component {
     // Job list
     //--------------------------------------------------------------------------
     let list = (
-      <Panel>
+      <Card>
         <div className='list-empty'>No jobs.</div>
-      </Panel>
+      </Card>
     );
+
     if(jobIds.length) {
       list = (
         <ListGroup>
@@ -62,11 +59,12 @@ class JobList extends Component {
     let scheduleButton = (
       <div className='control-button-container'>
         <Button
-          bsSize="xsmall"
+          variant="outline-secondary"
+          size="sm"
           disabled={!this.props.connected}
-          onClick={this.showScheduleDialog}
+          onClick={() => this.scheduleDialogCtl.show()}
         >
-          <Glyphicon glyph='calendar'/> Schedule a job
+          <FaCalendarAlt /> Schedule a job
         </Button>
       </div>
     );

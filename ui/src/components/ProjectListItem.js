@@ -8,13 +8,16 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { Button, Glyphicon, Panel } from 'react-bootstrap';
-import Dialog from 'react-bootstrap-dialog';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import { FaRegTrashAlt, FaBolt } from 'react-icons/fa';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { projectRemove } from '../utils/backendActions';
 
 import ScheduleDialog from './ScheduleDialog';
+import YesNoDialog from './YesNoDialog';
+import AlertDialog from './AlertDialog';
 
 //------------------------------------------------------------------------------
 // Project List Item
@@ -28,34 +31,26 @@ class ProjectListItem extends Component {
   }
 
   //----------------------------------------------------------------------------
-  // Show remove dialog
+  // Show the remove dialog
   //----------------------------------------------------------------------------
   showRemoveDialog = () => {
     const project = this.props;
-    this.dialog.show({
-      body: `Are you sure you want to remove project "${project.name}"?`,
-      actions: [
-        Dialog.CancelAction(),
-        Dialog.Action(
-          'Remove',
-          () => {
-            projectRemove(project.name)
-              .catch((error) => {
-                setTimeout(() => this.dialog.showAlert(error.message), 250);
-              });
-          },
-          'btn-danger'
-        )
-      ]
-    });
-  };
+    const removeProject = () => {
+      projectRemove(project.name)
+        .catch((error) => {
+          setTimeout(() => this.alertDialog.show(error.message), 250);
+        });
+    };
 
-  //----------------------------------------------------------------------------
-  // Show schedule dialog
-  //----------------------------------------------------------------------------
-  showScheduleDialog = (project, spider) => {
-    this.scheduleDialogCtl.showForSpider(project, spider);
-  };
+    const yes = {
+      variant: 'danger',
+      text: 'Remove',
+      fn: removeProject
+    };
+
+    const msg = `Are you sure you want to remove project "${project.name}"?`;
+    this.removeDialog.show(msg, yes);
+  }
 
   //----------------------------------------------------------------------------
   // Render
@@ -63,41 +58,47 @@ class ProjectListItem extends Component {
   render() {
     const project = this.props;
     return(
-      <Panel>
-        <Dialog ref={(el) => { this.dialog = el; }} />
+      <div className='project-list-item'>
+        <YesNoDialog ref={(el) => { this.removeDialog = el; }} />
+        <AlertDialog ref={(el) => { this.alertDialog = el; }} />
         <ScheduleDialog
           provideController={ctl => this.scheduleDialogCtl = ctl}
         />
-
-        <Panel.Heading >
-          <div className='list-item'>
-            <div className='item-panel'>
-              <Button
-                bsSize="xsmall"
-                disabled={!this.props.connected}
-                onClick={this.showRemoveDialog}
-              >
-                <Glyphicon glyph='trash'/> Remove
-              </Button>
+        <Card>
+          <Card.Header>
+            <div className='list-item'>
+              <div className='item-panel'>
+                <Button
+                  size='sm'
+                  variant='secondary'
+                  disabled={!this.props.connected}
+                  onClick={this.showRemoveDialog}
+                >
+                  <FaRegTrashAlt /> Remove
+                </Button>
+              </div>
+              <strong>{project.name}</strong>
             </div>
-            <strong>{project.name}</strong>
-          </div>
-        </Panel.Heading>
-        <Panel.Body>
-          <div className='spider-list'>
-            {project.spiders.map(spider => (
-              <Button
-                bsSize="xsmall"
-                disabled={!this.props.connected}
-                key={spider}
-                onClick={() => this.showScheduleDialog(project.name, spider)}
-              >
-                <Glyphicon glyph='flash'/> {spider}
-              </Button>
-            ))}
-          </div>
-        </Panel.Body>
-      </Panel>
+          </Card.Header>
+          <Card.Body>
+            <div className='spider-list'>
+              {project.spiders.map(spider => (
+                <Button
+                  size='sm'
+                  variant='outline-secondary'
+                  disabled={!this.props.connected}
+                  key={spider}
+                  onClick={() => {
+                    this.scheduleDialogCtl.show(project.name, spider);
+                  }}
+                >
+                  <FaBolt /> {spider}
+                </Button>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
     );
   }
 }

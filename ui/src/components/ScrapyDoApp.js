@@ -20,15 +20,16 @@ class ScrapyDoApp extends Component {
     return (
       <div>
         <ScrapyDoNav />
-        <BackendStatus />
-
-        <Switch>
-          <Route exact path='/' component={Dashboard} />
-          <Route exact path='/dashboard' component={Dashboard} />
-          <Route exact path='/project-list' component={ProjectList} />
-          <Route path='/job-list/:status' component={JobList} />
-          <Route component={WrongRoute} />
-        </Switch>
+        <div className='content'>
+          <BackendStatus />
+          <Switch>
+            <Route exact path='/' component={Dashboard} />
+            <Route exact path='/dashboard' component={Dashboard} />
+            <Route exact path='/project-list' component={ProjectList} />
+            <Route path='/job-list/:status' component={JobList} />
+            <Route component={WrongRoute} />
+          </Switch>
+        </div>
       </div>
     );
   }

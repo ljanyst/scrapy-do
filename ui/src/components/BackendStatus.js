@@ -7,7 +7,7 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Alert } from 'react-bootstrap';
+import Alert from 'react-bootstrap/Alert';
 
 import { backend } from '../utils/Backend';
 import { BACKEND_CONNECTING, BACKEND_OPENED } from '../actions/backend';
@@ -32,7 +32,7 @@ class BackendStatus extends Component {
     if(this.props.status === BACKEND_CONNECTING)
       return (
         <div className='col-md-4 col-md-offset-4'>
-          <Alert bsStyle='info' onClick={this.retryNow}>
+          <Alert variant='primary' onClick={this.retryNow}>
             <div className='alert-content'>
               Connecting...
             </div>
@@ -45,7 +45,7 @@ class BackendStatus extends Component {
     //--------------------------------------------------------------------------
     return (
       <div className='col-md-4 col-md-offset-4'>
-        <Alert bsStyle='info' type='button'>
+        <Alert variant='primary' type='button'>
           <div className='alert-content'>
             Disconnected. Connecting in
             <strong> {this.props.countdown}</strong>

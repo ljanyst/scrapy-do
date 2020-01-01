@@ -34,7 +34,7 @@ class Dashboard extends Component {
             </div>
 
             <div className='jobs-summary'>
-              <Table striped bordered condensed>
+              <Table striped bordered size="sm">
                 <thead>
                   <tr>
                     <th>Jobs Run</th>

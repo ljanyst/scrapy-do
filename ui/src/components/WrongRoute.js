@@ -6,13 +6,15 @@
 //------------------------------------------------------------------------------
 
 import React from 'react';
-import DirectionsIcon from 'react-icons/lib/md/directions';
+import { FaDirections } from 'react-icons/fa';
 
 export default function WrongRoute(props) {
   return (
     <div className='col-md-8 col-md-offset-2'>
-      <div align='center'>
-        <DirectionsIcon size={300} color='DimGrey'/>
+      <div style={{textAlign: 'center'}}>
+        <div style={{margin: '3em'}}>
+          <FaDirections size={300} color='DimGrey'/>
+        </div>
         <h3>This is not what you're looking for.</h3>
         </div>
     </div>

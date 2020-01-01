@@ -4,11 +4,25 @@ body {
   font-family: sans-serif;
 }
 
+
 .alert-content {
     text-align: center;
 }
 
+.dialog-content-center {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    text-align: center;
+}
+
+.dialog-content-left {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    text-align: left;
+}
+
 .dashboard-content {
+    margin: 2em;
     text-align: center;
 }
 
@@ -27,13 +41,14 @@ th {
 
 .list-empty {
     text-align: center;
+    color: #777;
     margin-top: 2em;
     margin-bottom: 2em;
 }
 
 .control-button-container {
     text-align: center;
-    margin: 1em;
+    margin-bottom: 1em;
 }
 
 .item-panel {
@@ -55,9 +70,19 @@ th {
     color: #666;
 }
 
-.spider-list {
+.spider-list Button {
+    margin-left: 0.3em;
+    margin-right: 0.3em;
 }
 
-.spider-list Button {
-    margin: 0.3em;
+.content {
+    margin-top: 2em;
+}
+
+.project-list-item {
+    margin-bottom: 1em;
+}
+
+h2 {
+    margin-bottom: 1em;
 }

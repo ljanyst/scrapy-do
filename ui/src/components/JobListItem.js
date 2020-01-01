@@ -8,26 +8,30 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { ListGroupItem, Button, Glyphicon } from 'react-bootstrap';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Button from 'react-bootstrap/Button';
+import Badge from 'react-bootstrap/Badge';
 import moment from 'moment-timezone';
-import Dialog from 'react-bootstrap-dialog';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
 import { jobCancel } from '../utils/backendActions';
+
+import YesNoDialog from './YesNoDialog';
+import AlertDialog from './AlertDialog';
 
 //------------------------------------------------------------------------------
 // Convert status to label class
 //------------------------------------------------------------------------------
 const statusToLabel = (status) => {
   switch(status) {
-  case 'SCHEDULED': return 'label-primary';
-  case 'PENDING': return 'label-warning';
-  case 'RUNNING': return 'label-success';
-  case 'CANCELED': return 'label-warning';
-  case 'SUCCESSFUL': return 'label-success';
-  case 'FAILED': return 'label-danger';
-  default: return 'label-default';
+  case 'SCHEDULED': return 'primary';
+  case 'PENDING': return 'warning';
+  case 'RUNNING': return 'success';
+  case 'CANCELED': return 'warning';
+  case 'SUCCESSFUL': return 'success';
+  case 'FAILED': return 'danger';
+  default: return 'primary';
   }
 };
 
@@ -56,22 +60,24 @@ class JobListItem extends Component {
   //----------------------------------------------------------------------------
   showCancelDialog = () => {
     const job = this.props;
-    this.dialog.show({
-      body: `Are you sure you want to cancel the job?`,
-      actions: [
-        Dialog.Action('No'),
-        Dialog.Action(
-          'Yes',
-          () => {
-            jobCancel(job.identifier)
-              .catch((error) => {
-                setTimeout(() => this.dialog.showAlert(error.message), 250);
-              });
-          },
-          'btn-danger'
-        )
-      ]
-    });
+    const cancelJob = () => {
+      jobCancel(job.identifier)
+        .catch((error) => {
+          setTimeout(() => this.alertDialog.show(error.message), 250);
+        });
+    };
+
+    const yes = {
+      variant: 'danger',
+      text: 'Yes',
+      fn: cancelJob
+    };
+    const no = {
+      text: 'No'
+    };
+
+    const msg = `Are you sure you want to cancel the job?`;
+    this.cancelDialog.show(msg, yes, no);
   };
 
   //----------------------------------------------------------------------------
@@ -101,11 +107,12 @@ class JobListItem extends Component {
       <div className='item-panel' title={dateTime}>
         {runningLogs}
         <Button
-          bsSize="xsmall"
+          variant="outline-secondary"
+          size="sm"
           disabled={!this.props.connected}
           onClick={this.showCancelDialog}
         >
-          <Glyphicon glyph='remove-circle'/> Cancel
+          Cancel
         </Button>
 
       </div>
@@ -135,22 +142,23 @@ class JobListItem extends Component {
     // Render the whole thing
     //--------------------------------------------------------------------------
     return (
-      <ListGroupItem>
-        <Dialog ref={(el) => { this.dialog = el; }} />
+      <ListGroup.Item>
+        <YesNoDialog ref={(el) => { this.cancelDialog = el; }} />
+        <AlertDialog ref={(el) => { this.alertDialog = el; }} />
         <div className='list-item'>
           <div className='item-panel' title={dateTime}>
             {timestamp.fromNow()}
           </div>
-          <span className={`label ${statusToLabel(job.status)}`}>
+          <Badge variant={statusToLabel(job.status)}>
             {job.status}
-          </span>
+          </Badge>
           <strong> {job.spider}</strong> ({job.project})
         </div>
         <div className='list-item-secondary'>
           {secondaryPanel}
           Scheduled by {capitalizeFirst(job.actor)} to run {job.schedule}.
         </div>
-      </ListGroupItem>
+      </ListGroup.Item>
     );
   }
 }

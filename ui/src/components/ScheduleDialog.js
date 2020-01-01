@@ -7,56 +7,70 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import Dialog from 'react-bootstrap-dialog';
-import {
-  FormGroup, ControlLabel, FormControl, Modal, Button, HelpBlock
-} from 'react-bootstrap';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+
+import Form from 'react-bootstrap/Form';
 
 import { jobSchedule } from '../utils/backendActions';
 import { scheduleValid } from '../utils/helpers';
 
-//------------------------------------------------------------------------------
-// Default state
-//------------------------------------------------------------------------------
-const defaultState = {
-  show: false,
-  projectsDisabled: false,
-  spidersDisabled: true,
-  scheduleDisabled: true,
-  submitDisabled: true,
-  project: '__select',
-  spider: '__select',
-  schedule: 'now'
-};
+import AlertDialog from './AlertDialog';
 
 //------------------------------------------------------------------------------
 // Schedule Dialog
 //------------------------------------------------------------------------------
 class ScheduleDialog extends Component {
-  state = defaultState;
+  //----------------------------------------------------------------------------
+  // The state
+  //----------------------------------------------------------------------------
+  state = {
+    visible: false,
+    project: '__select',
+    spider: '__select',
+    schedule: 'now',
+    projectsDisabled: false,
+    spidersDisabled: true,
+    scheduleDisabled: true,
+    submitDisabled: true,
+    scheduleValidated: true
+  }
 
   //----------------------------------------------------------------------------
   // Set up the dialog controller
   //----------------------------------------------------------------------------
   componentDidMount() {
     this.props.provideController({
-      show: this.show,
-      showForSpider: this.showForSpider
+      show: this.show
     });
   }
 
-  //----------------------------------------------------------------------------
-  // Clean up the dialog controller
-  //----------------------------------------------------------------------------
   componentWillUnmount() {
     this.props.provideController(null);
   }
 
   //----------------------------------------------------------------------------
-  // Show the dialog
+  // Close the modal
   //----------------------------------------------------------------------------
-  show = () => {
-    this.setState({show: true});
+  close = () => {
+    this.setState({ visible: false });
+  }
+
+  //----------------------------------------------------------------------------
+  // Show the modal
+  //----------------------------------------------------------------------------
+  show = (project, spider) => {
+    this.setState({
+      visible: true,
+      project: project ? project : '__select',
+      spider: spider ? spider : '__select',
+      schedule: 'now',
+      projectsDisabled: project ? true : false,
+      spidersDisabled: true,
+      scheduleDisabled: project && spider ? false : true,
+      submitDisabled: project && spider ? false : true,
+      validated: true
+    });
   }
 
   //----------------------------------------------------------------------------
@@ -74,21 +88,14 @@ class ScheduleDialog extends Component {
   }
 
   //----------------------------------------------------------------------------
-  // Hide the dialog
-  //----------------------------------------------------------------------------
-  hide = () => {
-    this.setState(defaultState);
-  }
-
-  //----------------------------------------------------------------------------
   // Schedule the job
   //----------------------------------------------------------------------------
   schedule = () => {
     jobSchedule(this.state.project, this.state.spider, this.state.schedule)
       .catch(error => {
-        setTimeout(() => this.dialog.showAlert(error.message), 250);
+        setTimeout(() => this.alert.show(error.message), 250);
       });
-    this.hide();
+    this.close();
   }
 
   //----------------------------------------------------------------------------
@@ -131,9 +138,11 @@ class ScheduleDialog extends Component {
   // On schedule change
   //----------------------------------------------------------------------------
   onScheduleChange = (event) => {
+    const scheduleValidated = scheduleValid(event.target.value);
     this.setState({
       schedule: event.target.value,
-      submitDisabled: !scheduleValid(event.target.value)
+      scheduleValidated: scheduleValidated,
+      submitDisabled: !scheduleValidated
     });
   };
 
@@ -145,12 +154,14 @@ class ScheduleDialog extends Component {
     // Project selector
     //--------------------------------------------------------------------------
     const projectSelector = (
-      <FormGroup controlId='projectSelect'>
-        <ControlLabel>Project</ControlLabel>
-        <FormControl componentClass='select' placeholder='__select'
-                     disabled={this.state.projectsDisabled}
-                     onChange={this.onProjectChange}
-                     value={this.state.project}
+      <Form.Group controlId="projectSelect">
+        <Form.Label>Project</Form.Label>
+        <Form.Control
+          as='select'
+          placeholder='__select'
+          disabled={this.state.projectsDisabled}
+          onChange={this.onProjectChange}
+          value={this.state.project}
         >
           <option value='__select'>Select Project</option>
           {this.props.__projects.map(project => (
@@ -158,25 +169,27 @@ class ScheduleDialog extends Component {
               {project}
             </option>
           ))}
-        </FormControl>
-      </FormGroup>
+        </Form.Control>
+      </Form.Group>
     );
 
     //--------------------------------------------------------------------------
     // Spider selector
     //--------------------------------------------------------------------------
     let spiders = [];
-    if(this.state.project !== '__select' && this.state.project in this.props)
+    if(this.state.project !== '__select' && this.state.project in this.props) {
       spiders = this.props[this.state.project].spiders;
+    }
 
     const spiderSelector = (
-      <FormGroup controlId='spiderSelect'>
-        <ControlLabel>Spider</ControlLabel>
-        <FormControl componentClass='select'
-                     placeholder='__select'
-                     disabled={this.state.spidersDisabled}
-                     onChange={this.onSpiderChange}
-                     value={this.state.spider}
+      <Form.Group controlId='spiderSelect'>
+        <Form.Label>Spider</Form.Label>
+        <Form.Control
+          as='select'
+          placeholder='__select'
+          disabled={this.state.spidersDisabled}
+          onChange={this.onSpiderChange}
+          value={this.state.spider}
         >
           <option value='__select'>Select Spider</option>
           {spiders.map(spider => (
@@ -184,8 +197,8 @@ class ScheduleDialog extends Component {
               {spider}
             </option>
           ))}
-        </FormControl>
-      </FormGroup>
+        </Form.Control>
+      </Form.Group>
     );
 
     //--------------------------------------------------------------------------
@@ -193,21 +206,22 @@ class ScheduleDialog extends Component {
     //--------------------------------------------------------------------------
     const specDocLink = 'https://scrapy-do.readthedocs.io/en/latest/basic-concepts.html#scheduling-specs';
     const scheduleInput = (
-      <FormGroup
+      <Form.Group
         controlId='scheduleInput'
-        validationState={
-          scheduleValid(this.state.schedule) ? 'success' : 'error'
-        }
       >
-        <ControlLabel>Schedule</ControlLabel>
-        <FormControl type='text' disabled={this.state.scheduleDisabled}
-                     value={this.state.schedule}
-                     onChange={this.onScheduleChange} />
-        <FormControl.Feedback />
-        <HelpBlock>
+        <Form.Label>Schedule</Form.Label>
+        <Form.Control
+          type='text'
+          disabled={this.state.scheduleDisabled}
+          value={this.state.schedule}
+          onChange={this.onScheduleChange}
+          isInvalid={!this.state.scheduleValidated}
+          isValid={this.state.scheduleValidated}
+        />
+        <Form.Text className="text-muted">
           See the <a href={specDocLink}>docs</a> on scheduling specs.
-        </HelpBlock>
-      </FormGroup>
+        </Form.Text>
+      </Form.Group>
     );
 
     //--------------------------------------------------------------------------
@@ -215,30 +229,33 @@ class ScheduleDialog extends Component {
     //--------------------------------------------------------------------------
     return (
       <div>
-        <Dialog ref={(el) => { this.dialog = el; }} />
-        <Modal show={this.state.show} onHide={this.handleClose} bsSize='small'>
+        <AlertDialog ref={(el) => { this.alert = el; }} />
+        <Modal
+          show={this.state.visible}
+          aria-labelledby="contained-modal-title-vcenter"
+          centered
+        >
           <Modal.Body>
-            {projectSelector}
-            {spiderSelector}
-            {scheduleInput}
+            <div className='dialog-content-left'>
+              {projectSelector}
+              {spiderSelector}
+              {scheduleInput}
+            </div>
           </Modal.Body>
           <Modal.Footer>
-            <Button
-              onClick={this.hide}
-              bsSize='small'
-            >
+            <Button variant="secondary" onClick={this.close}>
               Cancel
             </Button>
             <Button
+              variant="success"
               onClick={this.schedule}
-              bsStyle='primary'
-              bsSize='small'
               disabled={this.state.submitDisabled}
             >
               Schedule
             </Button>
           </Modal.Footer>
         </Modal>
+
       </div>
     );
   }
