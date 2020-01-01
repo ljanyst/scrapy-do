@@ -112,3 +112,7 @@ h2 {
 pre {
     margin-bottom: 0;
 }
+
+.content-container {
+    margin-bottom: 3em;
+}

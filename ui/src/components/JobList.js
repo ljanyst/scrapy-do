@@ -82,7 +82,9 @@ class JobList extends Component {
         />
         <h2>{capitalizeFirst(status)} Jobs</h2>
         {scheduleButton}
-        {list}
+        <div className='content-container'>
+          {list}
+        </div>
       </div>
     );
   }
