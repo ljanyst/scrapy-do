@@ -421,10 +421,15 @@ class WSProtocol(WebSocketServerProtocol):
                 self.send_error_response(data['id'], msg)
                 return
 
+        description = ''
+        if 'description' in data:
+            description = data['description']
+
         try:
             jobId = self.controller.schedule_job(data['project'],
                                                  data['spider'],
-                                                 data['schedule'])
+                                                 data['schedule'],
+                                                 description=description)
             msg = {
                 'jobId': jobId
             }
