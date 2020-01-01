@@ -55,7 +55,7 @@ th {
     float: right;
 }
 
-.item-log {
+.item-panel-links {
     display: inline-block;
     margin-right: 1em;
 }
@@ -99,14 +99,12 @@ h2 {
 }
 
 .accordion-header {
-    border-top: #ececec 1px solid;
-    background: #fcfcfc;
+    text-align: center;
+    border-top: #ddd 1px solid;
+    background: #eee;
+    color: #666;
     padding-left: 15px;
     padding-right: 15px;
-}
-
-.accordion-header a {
-    color: #666;
 }
 
 pre {
@@ -115,4 +113,12 @@ pre {
 
 .content-container {
     margin-bottom: 3em;
+}
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  background: #222;
+  color: #dcdcdc;
 }

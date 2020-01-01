@@ -11,8 +11,11 @@ import PropTypes from 'prop-types';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
+import Accordion from 'react-bootstrap/Accordion';
 import moment from 'moment-timezone';
 import hljs from 'highlight.js';
+import { LazyLog } from 'react-lazylog';
+import { useAccordionToggle } from 'react-bootstrap/AccordionToggle';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
@@ -20,7 +23,6 @@ import { jobCancel } from '../utils/backendActions';
 
 import YesNoDialog from './YesNoDialog';
 import AlertDialog from './AlertDialog';
-import JobAccordion from './JobAccordion';
 
 //------------------------------------------------------------------------------
 // Convert status to label class
@@ -36,6 +38,22 @@ const statusToLabel = (status) => {
   default: return 'primary';
   }
 };
+
+//------------------------------------------------------------------------------
+// Toggle
+//------------------------------------------------------------------------------
+function Toggle({ text, eventKey }) {
+  const onClick = useAccordionToggle(
+    eventKey,
+    (event) => {
+      event.preventDefault();
+    });
+  return (
+    <a href='foo' onClick={onClick}>
+      {text}
+    </a>
+  );
+}
 
 //------------------------------------------------------------------------------
 // Get log URL
@@ -92,73 +110,131 @@ class JobListItem extends Component {
           .format('YYYY-MM-DD HH:mm:ss');
 
     //--------------------------------------------------------------------------
-    // Logs and cancellation button
+    // Cancellation button
     //--------------------------------------------------------------------------
-    let runningLogs = '';
-    if(job.status === "RUNNING") {
-      runningLogs = (
-        <div className='item-log'>
-          <a href={getLogURL(job.identifier, false)}>Out Log</a>
-          &nbsp;|&nbsp;
-          <a href={getLogURL(job.identifier, true)}>Error Log</a>
-        </div>
-      );
-    }
-
-    let secondaryPanel = (
-      <div className='item-panel' title={dateTime}>
-        {runningLogs}
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          disabled={!this.props.connected}
-          onClick={this.showCancelDialog}
-        >
-          Cancel
-        </Button>
-
-      </div>
+    let cancelButton = (
+      <Button
+        variant="outline-secondary"
+        size="sm"
+        disabled={!this.props.connected}
+        onClick={this.showCancelDialog}
+      >
+        Cancel
+      </Button>
     );
 
     //--------------------------------------------------------------------------
     // Logs
     //--------------------------------------------------------------------------
-    if(this.props.jobList === 'COMPLETED') {
-      secondaryPanel = (
-        <div className='item-panel'>
-          {
-            job.outLog
-              ? (<a href={getLogURL(job.identifier, false)}>Out Log</a>)
-              : ''}
-          {job.outLog && job.errLog ? ' | ' : ''}
-          {
-            job.errLog
-              ? (<a href={getLogURL(job.identifier, true)}>Error Log</a>)
-              : ''
-          }
+    let outCollapse = null;
+    let outToggle = null;
+    let outAccordionKey = `out-${job.identifier}`;
+    let errCollapse = null;
+    let errToggle = null;
+    let errAccordionKey = `err-${job.identifier}`;
+
+    let follow = false;
+    if (job.status !== "RUNNING") {
+      follow = true;
+    }
+
+    outToggle = (
+      <Toggle eventKey={outAccordionKey} text='Out Log' />
+    );
+
+    errToggle = (
+      <Toggle eventKey={errAccordionKey} text='Err Log' />
+    );
+
+    outCollapse = (
+        <Accordion.Collapse eventKey={outAccordionKey}>
+          <div>
+            <div className="accordion-header">Out Log</div>
+            <div style={{ height: 500 }}>
+              <LazyLog
+                follow={follow}
+                enableSearch
+                url={getLogURL(job.identifier, false)}
+                caseInsensitive
+              />
+            </div>
           </div>
+        </Accordion.Collapse>
       );
+
+    errCollapse = (
+        <Accordion.Collapse eventKey={errAccordionKey}>
+          <div>
+            <div className="accordion-header">Err Log</div>
+            <div style={{ height: 500 }}>
+              <LazyLog
+                follow={follow}
+                enableSearch
+                url={getLogURL(job.identifier, true)}
+                caseInsensitive
+              />
+            </div>
+          </div>
+        </Accordion.Collapse>
+      );
+
+    if(this.props.jobList === 'COMPLETED') {
+      if (!job.outLog) {
+        outToggle = null;
+        outCollapse = null;
+      }
+
+      if (!job.errLog) {
+        errToggle = null;
+        errCollapse = null;
+      }
+    }
+
+    if(this.props.jobList === 'ACTIVE' && job.status !== "RUNNING") {
+      outToggle = null;
+      outCollapse = null;
+      errToggle = null;
+      errCollapse = null;
     }
 
     //--------------------------------------------------------------------------
     // Payload
     //--------------------------------------------------------------------------
-    let payloadAccordion = null;
-    if (job.payload !== '{}') {
-      var payload = JSON.stringify(JSON.parse(job.payload), null, 4);
-      const highlighted = hljs.highlight('json', payload).value;
-      payloadAccordion = (
-        <JobAccordion
-          eventKey={`payload-${job.identifier}`}
-          textInactive='Show payload'
-          textActive='Hide payload'
-        >
-          <pre className='hljs'>
-            <code dangerouslySetInnerHTML={{__html: highlighted}} />
-          </pre>
-        </JobAccordion>
+    let payloadCollapse = null;
+    let payloadToggle = null;
+    let payloadAccordionKey = `payload-${job.identifier}`;
+    let payload = JSON.stringify(JSON.parse(job.payload), null, 4);
+    const highlighted = hljs.highlight('json', payload).value;
+
+    if (payload !== '{}') {
+      payloadToggle = (
+        <Toggle eventKey={payloadAccordionKey} text='Payload' />
+      );
+
+      payloadCollapse = (
+        <Accordion.Collapse eventKey={payloadAccordionKey}>
+          <div>
+            <div className="accordion-header">Payload</div>
+            <pre className='hljs'>
+              <code dangerouslySetInnerHTML={{__html: highlighted}} />
+            </pre>
+          </div>
+        </Accordion.Collapse>
       );
     }
+
+    const secondaryPanel = (
+      <div className='item-panel' title={dateTime}>
+        <div className='item-panel-links'>
+          {outToggle}
+          {outToggle && (errToggle || payloadToggle) ? ' | ' : ''}
+          {errToggle}
+          {errToggle && payloadToggle ? ' | ' : ''}
+          {payloadToggle}
+        </div>
+        {cancelButton}
+      </div>
+    );
 
     //--------------------------------------------------------------------------
     // Render the whole thing
@@ -172,6 +248,7 @@ class JobListItem extends Component {
       <ListGroup.Item>
         <YesNoDialog ref={(el) => { this.cancelDialog = el; }} />
         <AlertDialog ref={(el) => { this.alertDialog = el; }} />
+        <Accordion>
         <div className='list-group-item-body'>
           <div className='list-item'>
             <div className='item-panel' title={dateTime}>
@@ -187,7 +264,10 @@ class JobListItem extends Component {
             Scheduled by {capitalizeFirst(job.actor)} to run {job.schedule}.
           </div>
         </div>
-        {payloadAccordion}
+        {payloadCollapse}
+        {outCollapse}
+        {errCollapse}
+        </Accordion>
       </ListGroup.Item>
     );
   }
