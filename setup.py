@@ -89,7 +89,7 @@ class build_ui(build_py):
                 sys.exit(1)
 
             assets = json.loads(open(asset_manifest, 'r').read())
-            for _, asset in assets.items():
+            for _, asset in assets['files'].items():
                 artefacts.append(asset)
 
             #-------------------------------------------------------------------
