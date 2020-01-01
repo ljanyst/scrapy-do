@@ -5,6 +5,7 @@
   "homepage": "/",
   "dependencies": {
     "bootstrap": "^4.4.1",
+    "highlight.js": "^9.17.1",
     "moment-timezone": "^0.5.27",
     "prop-types": "^15.7.2",
     "react": "^16.12.0",
