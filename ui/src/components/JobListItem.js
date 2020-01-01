@@ -141,6 +141,11 @@ class JobListItem extends Component {
     //--------------------------------------------------------------------------
     // Render the whole thing
     //--------------------------------------------------------------------------
+    var description = '';
+    if (job.description !== '') {
+      description = `[${job.description}]`;
+    }
+
     return (
       <ListGroup.Item>
         <YesNoDialog ref={(el) => { this.cancelDialog = el; }} />
@@ -152,7 +157,7 @@ class JobListItem extends Component {
           <Badge variant={statusToLabel(job.status)}>
             {job.status}
           </Badge>
-          <strong> {job.spider}</strong> ({job.project})
+          <strong> {job.spider} {description}</strong> ({job.project})
         </div>
         <div className='list-item-secondary'>
           {secondaryPanel}
