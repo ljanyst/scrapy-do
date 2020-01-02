@@ -335,6 +335,12 @@ class ClientTests(unittest.TestCase):
         ret = cmd.list_jobs_rsp_parse(rsp)
         self.assertIn(['foo'] * 9 + ['{}'], ret['data'])
 
+        rsp['jobs'][0]['payload'] = 'foo'
+        with patch('builtins.print'):
+            ret = cmd.list_jobs_rsp_parse(rsp)
+        self.assertIn(['foo'] * 9 + ['{"error": "malformed payload"}'],
+                      ret['data'])
+
         #-----------------------------------------------------------------------
         # Push project
         #-----------------------------------------------------------------------
