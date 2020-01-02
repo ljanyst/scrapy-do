@@ -99,3 +99,17 @@ Both of the steps below require `nodejs` to be installed.
   .. code-block:: console
 
        $ python setup.py bdist_wheel
+
+---------
+ChangeLog
+---------
+
+Version 0.4.0
+-------------
+
+* Migration to the Bootstrap 4 UI
+* Make it possible to add a short description to jobs
+* Make it possible to specify user-defined payload in each job that is passed
+  on as a parameter to the python crawler
+* UI updates to support the above
+* New log viewers in the web UI
