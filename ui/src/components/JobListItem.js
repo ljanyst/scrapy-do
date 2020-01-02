@@ -14,7 +14,6 @@ import Badge from 'react-bootstrap/Badge';
 import Accordion from 'react-bootstrap/Accordion';
 import moment from 'moment-timezone';
 import hljs from 'highlight.js';
-import { LazyLog } from 'react-lazylog';
 import { useAccordionToggle } from 'react-bootstrap/AccordionToggle';
 
 import { BACKEND_OPENED } from '../actions/backend';
@@ -23,6 +22,7 @@ import { jobCancel } from '../utils/backendActions';
 
 import YesNoDialog from './YesNoDialog';
 import AlertDialog from './AlertDialog';
+import LogViewer from './LogViewer';
 
 //------------------------------------------------------------------------------
 // Convert status to label class
@@ -42,10 +42,13 @@ const statusToLabel = (status) => {
 //------------------------------------------------------------------------------
 // Toggle
 //------------------------------------------------------------------------------
-function Toggle({ text, eventKey }) {
+function Toggle({ text, eventKey, fn }) {
   const onClick = useAccordionToggle(
     eventKey,
     (event) => {
+      if (fn) {
+        fn();
+      }
       event.preventDefault();
     });
   return (
@@ -136,16 +139,24 @@ class JobListItem extends Component {
     let errAccordionKey = `err-${job.identifier}`;
 
     let follow = false;
-    if (job.status !== "RUNNING") {
+    if (job.status === "RUNNING") {
       follow = true;
     }
 
+    const outFetch = () => {
+      this.outLog.fetch();
+    };
+
+    const errFetch = () => {
+      this.errLog.fetch();
+    };
+
     outToggle = (
-      <Toggle eventKey={outAccordionKey} text='Out Log' />
+      <Toggle eventKey={outAccordionKey} text='Out Log' fn={outFetch} />
     );
 
     errToggle = (
-      <Toggle eventKey={errAccordionKey} text='Err Log' />
+      <Toggle eventKey={errAccordionKey} text='Err Log' fn={errFetch} />
     );
 
     outCollapse = (
@@ -153,13 +164,15 @@ class JobListItem extends Component {
           <div>
             <div className="accordion-header">Out Log</div>
             <div style={{ height: 500 }}>
-              <LazyLog
+              <LogViewer
+                ref={(el) => { this.outLog = el; }}
                 follow={follow}
                 enableSearch
                 url={getLogURL(job.identifier, false)}
                 caseInsensitive
               />
             </div>
+
           </div>
         </Accordion.Collapse>
       );
@@ -169,7 +182,8 @@ class JobListItem extends Component {
           <div>
             <div className="accordion-header">Err Log</div>
             <div style={{ height: 500 }}>
-              <LazyLog
+              <LogViewer
+                ref={(el) => { this.errLog = el; }}
                 follow={follow}
                 enableSearch
                 url={getLogURL(job.identifier, true)}
