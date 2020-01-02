@@ -15,6 +15,7 @@ import Accordion from 'react-bootstrap/Accordion';
 import moment from 'moment-timezone';
 import hljs from 'highlight.js';
 import { useAccordionToggle } from 'react-bootstrap/AccordionToggle';
+import { FaRegTimesCircle } from 'react-icons/fa';
 
 import { BACKEND_OPENED } from '../actions/backend';
 import { capitalizeFirst } from '../utils/helpers';
@@ -123,7 +124,7 @@ class JobListItem extends Component {
           disabled={!this.props.connected}
           onClick={this.showCancelDialog}
         >
-          Cancel
+          <FaRegTimesCircle /> Cancel
         </Button>
       </div>
     );
