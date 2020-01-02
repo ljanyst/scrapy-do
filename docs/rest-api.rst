@@ -138,6 +138,9 @@ Schedule a job.
   * ``project`` - name of the project
   * ``spider`` - name of the spider
   * ``when`` - a schedling spec, see :ref:`scheduling-spec`.
+  * ``description`` - a short description of the job instance (optional)
+  * ``payload`` - a valid JSON object for user-specified payload that will be
+    passed as an argument to the spider code (optional)
 
   .. code-block:: console
 
@@ -185,8 +188,10 @@ Query by status:
              "schedule": "every 10 minutes",
              "project": "quotesbot",
              "spider": "toscrape-css",
+             "description": "test #1",
              "timestamp": "2017-12-11 15:34:13.008996",
-             "duration": null
+             "duration": null,
+             "payload": "{\n\"test\": [1, 2, 3]\n}"
            },
            {
              "identifier": "451e6083-54cd-4628-bc5d-b80e6da30e72",
@@ -195,8 +200,10 @@ Query by status:
              "schedule": "every minute",
              "project": "quotesbot",
              "spider": "toscrape-css",
+             "description": "",
              "timestamp": "2017-12-09 20:53:31.219428",
-             "duration": null
+             "duration": null,
+             "payload": "{}"
            }
          ]
        }
@@ -219,8 +226,10 @@ Query by id:
              "schedule": "now",
              "project": "quotesbot",
              "spider": "toscrape-css",
+             "description": "test #1",
              "timestamp": "2017-12-11 15:40:39.621948",
-             "duration": 2
+             "duration": 2,
+             "payload": "{\n\"test\": [1, 2, 3]\n}"
            }
          ]
       }
