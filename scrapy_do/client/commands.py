@@ -125,10 +125,21 @@ def list_jobs_rsp_parse(rsp):
     data = []
     headers = ['identifier', 'project', 'spider', 'status', 'schedule',
                'description', 'actor', 'timestamp', 'duration', 'payload']
+
     for job in rsp['jobs']:
         datum = []
         for h in headers:
-            datum.append(job[h])
+            if h == 'payload':
+                payload = '{"error": "malformed payload"}'
+                try:
+                    obj = json.loads(job[h])
+                    payload = json.dumps(obj, ensure_ascii=False)
+                except ValueError as e:
+                    print('[!] Cannot parse the JSON payload for job',
+                          job['identifier'], ':', str(e))
+                datum.append(payload)
+            else:
+                datum.append(job[h])
         data.append(datum)
     return {'headers': headers, 'data': data}
 
