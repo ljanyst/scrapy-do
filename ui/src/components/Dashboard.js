@@ -6,6 +6,7 @@
 //------------------------------------------------------------------------------
 
 import React, { Component } from 'react';
+import { Link } from "react-router-dom";
 import { Table } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import moment from 'moment-timezone';
@@ -55,6 +56,9 @@ class Dashboard extends Component {
                 </tbody>
               </Table>
             </div>
+          </div>
+          <div className='text-summary'>
+            [<Link to="/about">About</Link>]
           </div>
         </div>
       </div>
