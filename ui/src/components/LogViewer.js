@@ -60,7 +60,6 @@ class LogViewer extends Component {
       .then(result => {
         if (this.mounted) {
           this.setState({text: result});
-          console.log(this.props);
           if (this.props.follow) {
             setTimeout(this.fetch, 1000);
           }
