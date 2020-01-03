@@ -429,7 +429,9 @@ class Controller(Service):
         #-----------------------------------------------------------------------
         temp_proj_dir = os.path.join(temp_dir, project)
         env = {'SPIDER_DATA_DIR': self.spider_data_dir}
-        args = ['crawl', spider, '-a', 'payload=' + payload]
+        args = ['crawl', spider]
+        if payload != '{}':
+            args += ['-a', 'payload=' + payload]
         process, finished = run_process('scrapy', args, job_id,
                                         self.log_dir, env=env,
                                         path=temp_proj_dir)
