@@ -326,7 +326,8 @@ class Controller(Service):
             raise ValueError('Unknown spider {}/{}'.format(project, spider))
 
         try:
-            json.loads(payload)
+            obj = json.loads(payload)
+            payload = json.dumps(obj, ensure_ascii=False)
         except ValueError as e:
             msg = str(e)
             raise ValueError('Payload is not a valid JSON string: ' + msg)
