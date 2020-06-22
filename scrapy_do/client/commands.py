@@ -124,7 +124,8 @@ def list_jobs_arg_process(args):
 def list_jobs_rsp_parse(rsp):
     data = []
     headers = ['identifier', 'project', 'spider', 'status', 'schedule',
-               'description', 'actor', 'timestamp', 'duration', 'payload']
+               'description', 'actor', 'timestamp', 'duration', 'payload',
+               'output']
 
     for job in rsp['jobs']:
         datum = []
@@ -228,6 +229,8 @@ def schedule_job_arg_setup(subparsers):
                         help='description of the job')
     parser.add_argument('--payload', type=str, default='{}',
                         help='payload')
+    parser.add_argument('--output', type=str, default=None,
+                        help='output file for scrapy')
 
 
 def schedule_job_arg_process(args):
@@ -251,7 +254,8 @@ def schedule_job_arg_process(args):
         'spider': args.spider,
         'when': args.when,
         'description': args.description,
-        'payload': payload
+        'payload': payload,
+        'output': args.output
     }
 
 

@@ -55,11 +55,12 @@ class Job:
     description = TimeStamper('_description')
     duration = TimeStamper('_duration')
     payload = TimeStamper('_payload')
+    output = TimeStamper('_output')
 
     #---------------------------------------------------------------------------
     def __init__(self, status=None, actor=None, schedule=None,
                  project=None, spider=None, timestamp=None, duration=None,
-                 description='', payload='{}'):
+                 description='', payload='{}', output=None):
         self.identifier = str(uuid.uuid4())
 
         self._status = status
@@ -71,13 +72,14 @@ class Job:
         self.timestamp = timestamp or datetime.now()
         self._duration = duration
         self._payload = payload
+        self._output = output
 
     #---------------------------------------------------------------------------
     def __str__(self):
         s = 'Job[id="{}", actor="{}", schedule="{}", project="{}", '
-        s += 'spider="{}", description="{}"]'
+        s += 'spider="{}", description="{}", output="{}"]'
         s = s.format(self.identifier, self.actor.name, self.schedule,
-                     self.project, self.spider, self.description)
+                     self.project, self.spider, self.description, self.output)
         return s
 
     #---------------------------------------------------------------------------
@@ -95,7 +97,8 @@ class Job:
             'description': self.description,
             'timestamp': str(self.timestamp),
             'duration': self.duration,
-            'payload': self.payload
+            'payload': self.payload,
+            'output': self.output
         }
         return d
 
@@ -104,7 +107,7 @@ class Job:
 def _record_to_job(x):
     job = Job(status=Status(x[1]), actor=Actor(x[2]), schedule=x[3],
               project=x[4], spider=x[5], timestamp=dateutil.parser.parse(x[6]),
-              duration=x[7], description=x[8], payload=x[9])
+              duration=x[7], description=x[8], payload=x[9], output=x[10])
     job.identifier = x[0]
     return job
 
@@ -117,7 +120,7 @@ class Schedule:
     :param database: A file name where the database will be stored
     """
 
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 3
 
     #---------------------------------------------------------------------------
     def __init__(self, database=None):
@@ -159,12 +162,19 @@ class Schedule:
         self.db.commit()
 
     #---------------------------------------------------------------------------
+    def _upgrade_v2_to_v3(self):
+        query = 'ALTER TABLE schedule ADD output VARCHAR(512) DEFAULT ""'
+        self.db.execute(query)
+        self.db.commit()
+
+    #---------------------------------------------------------------------------
     def _open_database(self, version):
         bak_file = self.database + '.bak.'
         bak_file += datetime.now().strftime('%Y%m%d-%H%M%S')
         shutil.copyfile(self.database, bak_file)
         upgraders = {}
         upgraders[1] = self._upgrade_v1_to_v2
+        upgraders[2] = self._upgrade_v2_to_v3
         for v in range(version, self.CURRENT_VERSION):
             upgraders[v]()
 
@@ -193,7 +203,8 @@ class Schedule:
                 "timestamp DATETIME NOT NULL, " \
                 "duration INTEGER," \
                 "description VARCHAR(512) NOT NULL," \
-                "payload VARCHAR(4096) NOT NULL" \
+                "payload VARCHAR(4096) NOT NULL," \
+                "output VARCHAR(512)" \
                 ")"
         self.db.execute(query)
         self.db.commit()
@@ -279,12 +290,12 @@ class Schedule:
         """
         query = "INSERT INTO schedule" \
                 "(identifier, status, actor, schedule, project, spider, " \
-                "timestamp, duration, description, payload) " \
-                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "timestamp, duration, description, payload, output) " \
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self.db.execute(query, (job.identifier, job.status.value,
                                 job.actor.value, job.schedule, job.project,
                                 job.spider, job.timestamp, job.duration,
-                                job.description, job.payload))
+                                job.description, job.payload, job.output))
         self.db.commit()
 
     #---------------------------------------------------------------------------
@@ -296,12 +307,12 @@ class Schedule:
         """
         query = "REPLACE INTO schedule" \
                 "(identifier, status, actor, schedule, project, spider, " \
-                "timestamp, duration, description, payload) " \
-                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "timestamp, duration, description, payload, output) " \
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self.db.execute(query, (job.identifier, job.status.value,
                                 job.actor.value, job.schedule, job.project,
                                 job.spider, job.timestamp, job.duration,
-                                job.description, job.payload))
+                                job.description, job.payload, job.output))
         self.db.commit()
 
     #---------------------------------------------------------------------------

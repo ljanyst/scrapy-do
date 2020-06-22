@@ -429,12 +429,15 @@ class WSProtocol(WebSocketServerProtocol):
         if 'payload' in data:
             payload = data['payload']
 
+        output = data.get('output', None)
+
         try:
             jobId = self.controller.schedule_job(data['project'],
                                                  data['spider'],
                                                  data['schedule'],
                                                  description=description,
-                                                 payload=payload)
+                                                 payload=payload,
+                                                 output=output)
             msg = {
                 'jobId': jobId
             }

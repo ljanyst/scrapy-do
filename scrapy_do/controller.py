@@ -124,7 +124,8 @@ class Controller(Service):
             self.log.info('Re-scheduling: {}'.format(str(job)))
             sch_job = schedule_job(self.scheduler, job.schedule)
             sch_job.do(lambda job: self.schedule_job(job.project, job.spider,
-                                                     'now', Actor.SCHEDULER),
+                                                     'now', Actor.SCHEDULER,
+                                                     output=job.output),
                        job)
             self.scheduled_jobs[job.identifier] = sch_job
 
@@ -303,7 +304,7 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     def schedule_job(self, project, spider, when, actor=Actor.USER,
-                     description='', payload='{}'):
+                     description='', payload='{}', output=None):
         """
         Schedule a crawler job.
 
@@ -317,6 +318,7 @@ class Controller(Service):
                             to empty string
         :param payload: A serialized JSON object with user data, defaults to an
                         empty object
+        :param output: An absolute path for scrapy to store the output.
         :return:        A string identifier of a job
         """
         if project not in self.projects.keys():
@@ -334,12 +336,12 @@ class Controller(Service):
 
         job = Job(status=Status.PENDING, actor=actor, schedule='now',
                   project=project, spider=spider, description=description,
-                  payload=payload)
+                  payload=payload, output=output)
         if when != 'now':
             sch_job = schedule_job(self.scheduler, when)
             sch_job.do(lambda: self.schedule_job(project, spider, 'now',
                                                  Actor.SCHEDULER, description,
-                                                 payload))
+                                                 payload, output))
             self.scheduled_jobs[job.identifier] = sch_job
             job.status = Status.SCHEDULED
             job.schedule = when
@@ -406,7 +408,7 @@ class Controller(Service):
 
     #---------------------------------------------------------------------------
     @inlineCallbacks
-    def _run_crawler(self, project, spider, job_id, payload):
+    def _run_crawler(self, project, spider, job_id, payload, output=None):
         #-----------------------------------------------------------------------
         # Unzip to a temporary directory
         #-----------------------------------------------------------------------
@@ -432,6 +434,8 @@ class Controller(Service):
         args = ['crawl', spider]
         if payload != '{}':
             args += ['-a', 'payload=' + payload]
+        if output is not None:
+            args += ['-o', output]
         process, finished = run_process('scrapy', args, job_id,
                                         self.log_dir, env=env,
                                         path=temp_proj_dir)
@@ -449,7 +453,7 @@ class Controller(Service):
     #---------------------------------------------------------------------------
     def run_crawlers(self):
         """
-        Spawn as many crawler processe out of pending jobs as there is free
+        Spawn as many crawler processes out of pending jobs as there is free
         job slots.
         """
         jobs = self.schedule.get_jobs(Status.PENDING)
@@ -467,7 +471,7 @@ class Controller(Service):
             self.running_jobs[job.identifier] = None
 
             d = self._run_crawler(job.project, job.spider, job.identifier,
-                                  job.payload)
+                                  job.payload, job.output)
 
             #-------------------------------------------------------------------
             # Error starting the job
