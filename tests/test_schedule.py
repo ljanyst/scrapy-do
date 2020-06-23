@@ -75,7 +75,7 @@ class ScheduleTests(unittest.TestCase):
         for job in jobs:
             self.assertEqual(job.description, '')
 
-        self.assertEqual(int(self.schedule.get_metadata('version')), 2)
+        self.assertEqual(int(self.schedule.get_metadata('version')), 3)
 
         lst = glob.glob(db_file_test + '.bak*')
         self.assertEqual(len(lst), 1)
@@ -146,6 +146,6 @@ class ScheduleTests(unittest.TestCase):
 
     #---------------------------------------------------------------------------
     def test_metadata(self):
-        self.assertEqual(int(self.schedule.get_metadata('version')), 2)
+        self.assertEqual(int(self.schedule.get_metadata('version')), 3)
         with self.assertRaises(KeyError):
             self.schedule.get_metadata('foo')

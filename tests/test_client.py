@@ -330,16 +330,18 @@ class ClientTests(unittest.TestCase):
             'timestamp': 'foo',
             'duration': 'foo',
             'description': 'foo',
-            'payload': '{}'
+            'payload': '{}',
+            'output': '/foo/bar'
         }]}
         ret = cmd.list_jobs_rsp_parse(rsp)
-        self.assertIn(['foo'] * 9 + ['{}'], ret['data'])
+        self.assertIn(['foo'] * 9 + ['{}'] + ['/foo/bar'], ret['data'])
 
         rsp['jobs'][0]['payload'] = 'foo'
         with patch('builtins.print'):
             ret = cmd.list_jobs_rsp_parse(rsp)
-        self.assertIn(['foo'] * 9 + ['{"error": "malformed payload"}'],
-                      ret['data'])
+        self.assertIn(
+            ['foo'] * 9 + ['{"error": "malformed payload"}'] + ['/foo/bar'],
+            ret['data'])
 
         #-----------------------------------------------------------------------
         # Push project
