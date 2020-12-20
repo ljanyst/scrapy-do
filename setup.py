@@ -78,8 +78,7 @@ class build_ui(build_py):
                 'favicon.png',
                 'scrapy-do-logo.png',
                 'index.html',
-                'manifest.json',
-                'service-worker.js'
+                'manifest.json'
             ]
 
             build_dir = 'ui/build'
