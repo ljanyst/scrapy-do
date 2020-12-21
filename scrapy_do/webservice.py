@@ -10,6 +10,8 @@ import json
 import time
 import psutil
 import socket
+import urllib
+import os.path
 import mimetypes
 
 from autobahn.twisted.resource import WebSocketResource
@@ -18,7 +20,6 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.cred.checkers import FilePasswordDB
 from twisted.web.resource import IResource
 from twisted.cred.portal import IRealm, Portal
-from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
 from twisted.web.guard import HTTPAuthSessionWrapper, DigestCredentialFactory
 from scrapy_do.utils import get_object
@@ -30,6 +31,7 @@ from scrapy_do import __version__
 from datetime import datetime
 from pkgutil import get_data
 from .utils import arg_require_all, arg_require_any, pprint_relativedelta
+from .utils import twisted_sleep
 
 
 #-------------------------------------------------------------------------------
@@ -335,6 +337,53 @@ class CancelJob(JsonResource):
 
 
 #-------------------------------------------------------------------------------
+class GetLogFile(resource.Resource):
+
+    isLeaf = True
+
+    #---------------------------------------------------------------------------
+    def __init__(self, parent):
+        super(GetLogFile, self).__init__()
+        self.parent = parent
+
+    #---------------------------------------------------------------------------
+    def render_GET(self, request):
+        @inlineCallbacks
+        def do_async():
+            request.setHeader('Content-Type', 'text/plain')
+
+            filename = os.path.basename(urllib.parse.unquote(request.path))
+            filepath = os.path.join(self.parent.parent.controller.log_dir,
+                                    filename)
+            try:
+                f = open(filepath, "rb")
+            except Exception:
+                request.setResponseCode(404)
+                request.write('File not found'.encode('utf-8'))
+                request.finish()
+                return
+
+            controller = self.parent.parent.controller
+            job_id = os.path.splitext(filename)[0]
+            while True:
+                try:
+                    data = f.read()
+                    if len(data) == 0:
+                        if job_id in controller.running_jobs:
+                            yield twisted_sleep(0.25)
+                        else:
+                            break
+                    request.write(data)
+                except Exception:
+                    break
+            f.close()
+            request.finish()
+
+        do_async()
+        return NOT_DONE_YET
+
+
+#-------------------------------------------------------------------------------
 class GetLog(resource.Resource):
 
     isLeaf = False
@@ -342,8 +391,11 @@ class GetLog(resource.Resource):
     #---------------------------------------------------------------------------
     def __init__(self, parent):
         super(GetLog, self).__init__()
-        data = File(parent.controller.log_dir, defaultType='text/plain')
-        self.putChild(b'data', data)
+        self.parent = parent
+
+    #---------------------------------------------------------------------------
+    def getChild(self, name, request):
+        return GetLogFile(self)
 
 
 #-------------------------------------------------------------------------------
