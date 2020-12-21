@@ -351,10 +351,11 @@ class GetLogFile(resource.Resource):
         @inlineCallbacks
         def do_async():
             request.setHeader('Content-Type', 'text/plain')
-
+            controller = self.parent.parent.controller
             filename = os.path.basename(urllib.parse.unquote(request.path))
-            filepath = os.path.join(self.parent.parent.controller.log_dir,
-                                    filename)
+            filepath = os.path.join(controller.log_dir, filename)
+            job_id = os.path.splitext(filename)[0]
+
             try:
                 f = open(filepath, "rb")
             except Exception:
@@ -363,8 +364,6 @@ class GetLogFile(resource.Resource):
                 request.finish()
                 return
 
-            controller = self.parent.parent.controller
-            job_id = os.path.splitext(filename)[0]
             while True:
                 try:
                     data = f.read()
