@@ -24,7 +24,6 @@ import { jobCancel } from '../utils/backendActions';
 
 import YesNoDialog from './YesNoDialog';
 import AlertDialog from './AlertDialog';
-import LogViewer from './LogViewer';
 
 //------------------------------------------------------------------------------
 // Convert status to label class
