@@ -11,12 +11,12 @@ import uuid
 from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy_do.webservice import Status, PushProject, ListProjects, ListSpiders
 from scrapy_do.webservice import ScheduleJob, ListJobs, CancelJob, RemoveProject
-from scrapy_do.webservice import WebApp
+from scrapy_do.webservice import WebApp, GetLog
 from scrapy_do.controller import Project
 from twisted.web.server import NOT_DONE_YET
 from scrapy_do.schedule import Job, Actor
 from scrapy_do.schedule import Status as JobStatus
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, MagicMock, patch
 from twisted.trial import unittest
 from datetime import datetime
 
@@ -402,6 +402,78 @@ class WebServicesTests(unittest.TestCase):
         decoded = json.loads(data)
         self.assertIn('status', decoded)
         self.assertEqual(decoded['status'], 'ok')
+
+    #---------------------------------------------------------------------------
+    @inlineCallbacks
+    def test_get_log(self):
+        web_app = Mock()
+        web_app.controller = Mock()
+        web_app.controller.log_dir = '/'
+        web_app.controller.running_jobs = {
+            '76f8e58f-7fe5-4195-b926-cc5a69b057b2': None
+        }
+        request = Mock()
+        request.method = 'GET'
+        request.path = '/get-log/data/76f8e58f-7fe5-4195-b926-cc5a69b057b2.err'
+        service = GetLog(web_app)
+        child = service.getChild(request.path, request)
+
+        #-----------------------------------------------------------------------
+        # Open fails
+        #-----------------------------------------------------------------------
+        mopen = MagicMock()
+        d = Deferred()
+        request.finish.side_effect = lambda: d.callback(None)
+        with patch('builtins.open', mopen) as mock_open:
+            mock_open.side_effect = IOError()
+            ret = child.render(request)
+
+        yield d
+        self.assertEqual(ret, NOT_DONE_YET)
+        request.setResponseCode.assert_called_with(404)
+
+        #-----------------------------------------------------------------------
+        # Read throws an exception
+        #-----------------------------------------------------------------------
+        mopen = MagicMock()
+        request.mock_reset()
+        d = Deferred()
+        request.finish.side_effect = lambda: d.callback(None)
+        mfile = Mock()
+        mfile.read.side_effect = IOError()
+        with patch('builtins.open', mopen) as mock_open:
+            mock_open.return_value = mfile
+            child.render(request)
+
+        yield d
+        request.setResponseCode.assert_called_with(500)
+
+        #-----------------------------------------------------------------------
+        # Read log of a running job
+        #-----------------------------------------------------------------------
+        mopen = MagicMock()
+        request.mock_reset()
+        d = Deferred()
+        request.finish.side_effect = lambda: d.callback(None)
+        mfile = Mock()
+        calls = [0]
+
+        def rd():
+            calls[0] += 1
+            if calls[0] == 1:
+                return b'a'
+            if calls[0] == 2:
+                return b''
+            if calls[0] == 3:
+                return b's'
+            web_app.controller.running_jobs = {}
+            return b''
+        mfile.read.side_effect = rd
+        with patch('builtins.open', mopen) as mock_open:
+            mock_open.return_value = mfile
+            child.render(request)
+
+        yield d
 
     #---------------------------------------------------------------------------
     def test_web_app(self):
