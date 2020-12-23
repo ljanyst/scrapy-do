@@ -351,6 +351,7 @@ class GetLogFile(resource.Resource):
         @inlineCallbacks
         def do_async():
             request.setHeader('Content-Type', 'text/plain')
+            request.setHeader('Access-Control-Allow-Origin', '*')
             controller = self.parent.parent.controller
             filename = os.path.basename(urllib.parse.unquote(request.path))
             filepath = os.path.join(controller.log_dir, filename)
@@ -370,10 +371,12 @@ class GetLogFile(resource.Resource):
                     if len(data) == 0:
                         if job_id in controller.running_jobs:
                             yield twisted_sleep(0.25)
+                            continue
                         else:
                             break
                     request.write(data)
                 except Exception:
+                    request.setResponseCode(500)
                     break
             f.close()
             request.finish()
