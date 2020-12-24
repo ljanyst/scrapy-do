@@ -242,7 +242,11 @@ class Controller(Service):
         if ret_code != 0:
             shutil.rmtree(temp_dir)
             os.remove(tmp[1])
-            raise ValueError('Unable to get the list of spiders')
+            raise ValueError(
+                'Unable to get the list of spiders. Assuming there are no '
+                'errors in your code, this usually means missing packages '
+                'in your server environment.'
+            )
 
         spiders = out.decode('utf-8').split()
 
