@@ -47,9 +47,10 @@ class ControllerTests(unittest.TestCase):
         #-----------------------------------------------------------------------
         controller = self.controller
         yield controller.push_project(self.project_archive_data)
-        controller.schedule_job('quotesbot', 'toscrape-css', 'every second')
+        controller.schedule_job('quotesbot', 'toscrape-css', 'every second',
+                                description='test')
         controller.schedule_job('quotesbot', 'toscrape-xpath',
-                                'every 2 seconds')
+                                'every 2 seconds', payload='{"test": 42}')
 
         job = Job(Status.RUNNING, Actor.SCHEDULER, 'now', 'foo1', 'bar1')
         self.controller.schedule.add_job(job)
@@ -69,6 +70,12 @@ class ControllerTests(unittest.TestCase):
         pending_jobs = controller.get_jobs(Status.PENDING)
         pending_spiders = [job.spider for job in pending_jobs]
         self.assertEqual(len(pending_jobs), 4)
+
+        for job in pending_jobs:
+            if job.spider == 'toscrape-xpath':
+                self.assertEqual(job.payload, '{"test": 42}')
+            elif job.spider == 'toscrape-css':
+                self.assertEqual(job.description, 'test')
 
         for spider in ['toscrape-css', 'toscrape-xpath', 'bar1', 'bar2']:
             self.assertIn(spider, pending_spiders)
