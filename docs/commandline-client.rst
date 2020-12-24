@@ -143,7 +143,9 @@ Parameters:
   * ``--description`` - a short description of the job instance; defaults to
     an empty string
   * ``--payload`` - a valid JSON object for user-specified payload that will be
-    passed as an argument to the spider code; defaults to ``{}``
+    passed as a
+    `scrapy named argument <https://docs.scrapy.org/en/latest/topics/spiders.html#spider-arguments>`_
+    to the spider code; defaults to ``{}``
 
 Example:
 
