@@ -104,6 +104,16 @@ Both of the steps below require `nodejs` to be installed.
 ChangeLog
 ---------
 
+Version 0.5.0
+-------------
+
+* Rewrite the log handling functionality to resolve duplication issues
+* Bump the JavaScript dependencies to resolve browser caching issues
+* Make the error message on failed spider listing more descriptive (Bug #28)
+* Make sure that the spider descriptions and payloads get handled properly on
+  restart (Bug #24)
+* Clarify the documentation on passing arguments to spiders (Bugs #23 and #27)
+
 Version 0.4.0
 -------------
 
