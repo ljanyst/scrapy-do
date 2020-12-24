@@ -126,7 +126,7 @@ class ControllerTests(unittest.TestCase):
         }
 
         def chk_list(e):
-            self.assertEqual(str(e), 'Unable to get the list of spiders')
+            self.assertEqual(str(e)[:34], 'Unable to get the list of spiders.')
         list_error = {
             'data': broken_data_no_spiders,
             'exc_check': chk_list
