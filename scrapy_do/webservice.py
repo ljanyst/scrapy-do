@@ -353,7 +353,12 @@ class GetLogFile(resource.Resource):
             request.setHeader('Content-Type', 'text/plain')
             request.setHeader('Access-Control-Allow-Origin', '*')
             controller = self.parent.parent.controller
-            filename = os.path.basename(urllib.parse.unquote(request.path))
+            
+            req_path = request.path
+            if isinstance(req_path, bytes):
+                req_path = req_path.decode('utf-8')
+
+            filename = os.path.basename(urllib.parse.unquote(req_path))
             filepath = os.path.join(controller.log_dir, filename)
             job_id = os.path.splitext(filename)[0]
 
